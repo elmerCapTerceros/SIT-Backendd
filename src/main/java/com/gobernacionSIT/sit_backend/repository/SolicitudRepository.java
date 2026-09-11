@@ -16,7 +16,6 @@ public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
     List<Solicitud> findByEstado_EstadoSol(String estadoSol);
 
     // Ítem #4: técnico lista solicitudes que tiene asignadas
-    // TODO: implementar cuando esté definida la relación Solicitud-Asignacion
     // List<Solicitud> findByAsignaciones_Tecnico_Id(Long tecnicoId);
 
     // Filtrar por prioridad
