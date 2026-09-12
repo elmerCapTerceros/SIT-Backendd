@@ -15,8 +15,8 @@ public class EstadoSolicitud {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "estado_sol", nullable = false, unique = true, length = 20)
-    private String estadoSol;
+    @Column(name = "estado_solicitud", nullable = false, unique = true, length = 20)
+    private String estadoSolicitud;
 
     @Column(length = 70)
     private String descripcion;

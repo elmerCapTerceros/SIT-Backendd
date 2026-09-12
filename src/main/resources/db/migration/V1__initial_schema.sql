@@ -5,17 +5,21 @@ CREATE TABLE rol (
 
 CREATE TABLE estado_solicitud (
     id BIGSERIAL PRIMARY KEY,
-    estado_sol VARCHAR(20) NOT NULL UNIQUE CHECK (estado_sol IN ('PENDIENTE', 'EN_PROCESO', 'CONCLUIDA')),
+    estado_solicitud VARCHAR(20) NOT NULL UNIQUE CHECK (estado_solicitud IN ('PENDIENTE', 'EN_PROCESO', 'CONCLUIDA')),
     descripcion VARCHAR(70),
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );
 
 CREATE TABLE usuario (
     id BIGSERIAL PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    apellido VARCHAR(100) NOT NULL,
-    email VARCHAR(150) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    nombre VARCHAR(100),
+    apellido VARCHAR(100),
+    user_login VARCHAR(30) NOT NULL UNIQUE,
+    password VARCHAR(30) NOT NULL,
+    cargo VARCHAR(20),
+    telefono VARCHAR(8),
+    area VARCHAR(40),
+    ubicacion_oficina VARCHAR(40),
     rol_id BIGINT NOT NULL REFERENCES rol(id),
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );
@@ -32,7 +36,6 @@ CREATE TABLE solicitud (
     prioridad VARCHAR(10) CHECK (prioridad IN ('ALTA', 'MEDIA', 'BAJA')),
     solicitante_id BIGINT NOT NULL REFERENCES usuario(id),
     verificado_por_usuario BOOLEAN NOT NULL DEFAULT FALSE,
-    verificado_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
     updated_at TIMESTAMP NOT NULL DEFAULT now()
 );
@@ -61,5 +64,6 @@ CREATE TABLE aviso(
     id BIGSERIAL PRIMARY KEY,
     id_supervisor BIGINT NOT NULL REFERENCES usuario(id),
     mensaje TEXT NOT NULL,
+    destinatario VARCHAR(15),
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );

@@ -46,9 +46,6 @@ public class Solicitud {
     @Column(name = "verificado_por_usuario", nullable = false)
     private Boolean verificadoPorUsuario = false;
 
-    @Column(name = "verificado_at")
-    private LocalDateTime verificadoAt;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
