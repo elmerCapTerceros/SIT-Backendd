@@ -6,5 +6,5 @@ import java.util.Optional;
 
 
 public interface EstadoSolicitudRepository extends JpaRepository<EstadoSolicitud, Long> {
-    Optional<EstadoSolicitud> findByNombreEstado(String nombreEstado);
+    Optional<EstadoSolicitud> findByEstadoSolicitud(String estadoSolicitud);
 }

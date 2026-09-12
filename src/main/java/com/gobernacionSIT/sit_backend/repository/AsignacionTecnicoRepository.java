@@ -11,4 +11,6 @@ public interface AsignacionTecnicoRepository extends JpaRepository<AsignacionTec
     List<AsignacionTecnico> findByTecnico_Id(Long tecnicoId);
 
     Optional<AsignacionTecnico> findBySolicitud_IdAndTecnico_Id(Long solicitudId, Long tecnicoId);
+
+    
 }
