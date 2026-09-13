@@ -1,0 +1,2 @@
+ALTER TABLE usuario
+    ALTER COLUMN password TYPE VARCHAR(100);

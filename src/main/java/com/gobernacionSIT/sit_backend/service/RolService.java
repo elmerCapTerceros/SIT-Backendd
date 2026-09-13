@@ -22,20 +22,14 @@ public class RolService {
     }
 
     public Rol crearRol(String nombreRol){
-         // 1. Validaciones de negocio
+
         if (nombreRol == null || nombreRol.isBlank()) {
             throw new IllegalArgumentException("El nombre del rol no puede estar vacío");
         }
 
-        // 2. Regla de negocio: no duplicar
         if (rolRepository.existsByNombreRol(nombreRol)) {
             throw new IllegalStateException("Ya existe un rol con ese nombre");
         }
-
-        // 3. Validar que sea uno de los permitidos
-        /*if (!List.of("FUNCIONARIO", "TECNICO", "SUPERVISOR").contains(nombreRol)) {
-            throw new IllegalArgumentException("Rol no permitido");
-        }*/
 
         Rol rol = new Rol();
         rol.setNombreRol(nombreRol);
