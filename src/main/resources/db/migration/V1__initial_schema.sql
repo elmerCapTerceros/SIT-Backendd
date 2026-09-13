@@ -27,15 +27,15 @@ CREATE TABLE usuario (
 CREATE TABLE solicitud (
     id BIGSERIAL PRIMARY KEY,
     titulo VARCHAR(200) NOT NULL,
-    area VARCHAR(150) NOT NULL,
-    categoria VARCHAR(100) NOT NULL,
+    area VARCHAR(150),
+    categoria VARCHAR(100),
     descripcion TEXT NOT NULL,
     ubicacion VARCHAR(150),
     equipo_danado VARCHAR(150),
     estado_id BIGINT NOT NULL REFERENCES estado_solicitud(id),
     prioridad VARCHAR(10) CHECK (prioridad IN ('ALTA', 'MEDIA', 'BAJA')),
     solicitante_id BIGINT NOT NULL REFERENCES usuario(id),
-    verificado_por_usuario BOOLEAN NOT NULL DEFAULT FALSE,
+    verificado_por_usuario BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP NOT NULL DEFAULT now(),
     updated_at TIMESTAMP NOT NULL DEFAULT now()
 );

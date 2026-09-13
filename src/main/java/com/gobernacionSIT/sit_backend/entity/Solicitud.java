@@ -17,7 +17,7 @@ public class Solicitud {
     @Column(nullable = false, length = 200)
     private String titulo;
 
-    @Column(nullable = false, length = 150)
+    @Column(length = 150)
     private String area;
 
     @Column(nullable = false, length = 100)
@@ -51,4 +51,9 @@ public class Solicitud {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PreUpdate
+    public void actualizarFechaModificacion() {
+        updatedAt = LocalDateTime.now();
+    }
 }
