@@ -4,6 +4,7 @@ import com.gobernacionSIT.sit_backend.dto.request.LoginRequest;
 import com.gobernacionSIT.sit_backend.dto.response.LoginResponse;
 import com.gobernacionSIT.sit_backend.security.JwtUtils;
 import com.gobernacionSIT.sit_backend.service.UsuarioService;
+import com.gobernacionSIT.sit_backend.dto.response.UsuarioResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,12 +36,15 @@ public class AuthController {
                 .findFirst()
                 .map(authority -> authority.getAuthority().replaceFirst("^ROLE_", ""))
                 .orElse(null);
+            UsuarioResponse usuario = usuarioService.buscarPorUserLogin(authentication.getName());
 
         return ResponseEntity.ok(new LoginResponse(
             token,
             authentication.getName(),
             rol,
-            usuarioService.esPrimerIngreso(authentication.getName())
+                usuarioService.esPrimerIngreso(authentication.getName()),
+                usuario.getNombre(),
+                usuario.getApellido()
         ));
     }
 }

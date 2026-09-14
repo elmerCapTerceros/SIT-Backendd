@@ -14,6 +14,8 @@ public interface UsuarioService {
 
     boolean esPrimerIngreso(String userLogin);
 
+    UsuarioResponse buscarPorUserLogin(String userLogin);
+
     UsuarioResponse buscarPorId(Long id);
 
     List<UsuarioResponse> listarTecnicos();

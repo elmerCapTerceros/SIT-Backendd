@@ -79,6 +79,14 @@ public class UsuarioServiceImpl implements UsuarioService {
 
     @Override
     @Transactional(readOnly = true)
+    public UsuarioResponse buscarPorUserLogin(String userLogin) {
+        Usuario usuario = usuarioRepository.findByUserLogin(userLogin)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+        return mapToResponse(usuario);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public UsuarioResponse buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
