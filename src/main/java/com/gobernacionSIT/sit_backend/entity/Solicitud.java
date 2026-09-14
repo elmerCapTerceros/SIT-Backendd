@@ -23,7 +23,7 @@ public class Solicitud {
     @Column(nullable = false, length = 100)
     private String categoria;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String descripcion;
 
     @Column(length = 150)
