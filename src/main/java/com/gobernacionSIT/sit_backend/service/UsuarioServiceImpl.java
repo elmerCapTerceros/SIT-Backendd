@@ -29,7 +29,7 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new IllegalArgumentException("Ya existe un usuario con ese loginUser");
         }
 
-        Rol rol = rolRepository.findByNombreRol(request.getNombreRol())
+        Rol rol = rolRepository.findByNombreRol("FUNCIONARIO")
                 .orElseThrow(() -> new IllegalArgumentException("Rol no válido"));
 
         Usuario usuario = new Usuario();
@@ -41,6 +41,7 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setTelefono(request.getTelefono());
         usuario.setArea(request.getArea());
         usuario.setUbicacionOficina(request.getUbicacionOficina());
+        usuario.setPrimerIngreso(true);
         usuario.setRol(rol);
 
         Usuario guardado = usuarioRepository.save(usuario);
@@ -62,8 +63,18 @@ public class UsuarioServiceImpl implements UsuarioService {
         }
         usuario.setArea(request.getArea());
         usuario.setUbicacionOficina(request.getUbicacionOficina());
+        usuario.setPrimerIngreso(false);
 
         return mapToResponse(usuarioRepository.save(usuario));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean esPrimerIngreso(String userLogin) {
+        Usuario usuario = usuarioRepository.findByUserLogin(userLogin)
+                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+
+        return usuario.isPrimerIngreso();
     }
 
     @Override

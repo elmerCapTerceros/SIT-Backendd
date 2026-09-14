@@ -37,6 +37,5 @@ public class RegistrarUsuarioRequest {
     @Size(max = 40)
     private String ubicacionOficina;
 
-    @NotBlank(message = "El rol es obligatorio")
     private String nombreRol;
 }

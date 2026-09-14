@@ -12,6 +12,8 @@ public interface UsuarioService {
 
     UsuarioResponse actualizarPerfil(String userLogin, ActualizarPerfilRequest request);
 
+    boolean esPrimerIngreso(String userLogin);
+
     UsuarioResponse buscarPorId(Long id);
 
     List<UsuarioResponse> listarTecnicos();

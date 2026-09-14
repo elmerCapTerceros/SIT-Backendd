@@ -3,6 +3,7 @@ package com.gobernacionSIT.sit_backend.controller;
 import com.gobernacionSIT.sit_backend.dto.request.LoginRequest;
 import com.gobernacionSIT.sit_backend.dto.response.LoginResponse;
 import com.gobernacionSIT.sit_backend.security.JwtUtils;
+import com.gobernacionSIT.sit_backend.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
+    private final UsuarioService usuarioService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
@@ -34,6 +36,11 @@ public class AuthController {
                 .map(authority -> authority.getAuthority().replaceFirst("^ROLE_", ""))
                 .orElse(null);
 
-        return ResponseEntity.ok(new LoginResponse(token, authentication.getName(), rol));
+        return ResponseEntity.ok(new LoginResponse(
+            token,
+            authentication.getName(),
+            rol,
+            usuarioService.esPrimerIngreso(authentication.getName())
+        ));
     }
 }
