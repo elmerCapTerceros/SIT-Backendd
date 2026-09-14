@@ -19,6 +19,6 @@ public class CrearSolicitudRequest {
     @JsonAlias("categoria")
     private String tipo;
 
-    @NotBlank(message = "La descripción es obligatoria")
+    @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
     private String descripcion;
 }
