@@ -3,6 +3,7 @@ spring:
     name: sit-backend
 
   datasource:
+
     url: jdbc:postgresql://localhost:5433/sit_db
     username: sit_user
     password: sit_pass
