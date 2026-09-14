@@ -38,6 +38,9 @@ public class Usuario {
     @Column(name = "ubicacion_oficina", length = 40)
     private String ubicacionOficina;
 
+    @Column(name = "primer_ingreso", nullable = false)
+    private boolean primerIngreso = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rol_id", nullable = false)
     private Rol rol;

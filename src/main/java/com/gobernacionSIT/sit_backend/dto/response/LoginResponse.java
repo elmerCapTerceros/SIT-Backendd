@@ -12,4 +12,7 @@ public class LoginResponse {
     private String token;
     private String userLogin;
     private String rol;
+    private boolean primerIngreso;
+    private String nombre;
+    private String apellido;
 }
