@@ -57,6 +57,9 @@ public class UsuarioServiceImpl implements UsuarioService {
         usuario.setApellido(request.getApellido());
         usuario.setCargo(request.getCargo());
         usuario.setTelefono(request.getTelefono());
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            usuario.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
         usuario.setArea(request.getArea());
         usuario.setUbicacionOficina(request.getUbicacionOficina());
 

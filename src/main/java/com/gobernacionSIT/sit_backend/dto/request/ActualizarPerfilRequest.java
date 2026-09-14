@@ -18,6 +18,9 @@ public class ActualizarPerfilRequest {
     @Size(max = 20)
     private String cargo;
 
+    @Size(max = 20)
+    private String password;
+
     @Pattern(regexp = "\\d{7,8}", message = "El teléfono debe tener 7 u 8 dígitos")
     private String telefono;
 
