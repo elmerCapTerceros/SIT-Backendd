@@ -29,6 +29,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UsuarioResponse> actualizarPerfil(
             @Valid @RequestBody ActualizarPerfilRequest request,
             Authentication authentication) {
