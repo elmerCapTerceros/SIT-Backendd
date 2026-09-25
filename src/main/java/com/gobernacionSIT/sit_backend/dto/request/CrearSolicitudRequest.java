@@ -13,6 +13,7 @@ public class CrearSolicitudRequest {
 
     @NotBlank(message = "El título es obligatorio")
     @Size(min = 5, max = 200, message = "El título debe tener entre 5 y 200 caracteres")
+    @Pattern(regexp = ".{5,200}", message = "El título debe tener entre 5 y 200 caracteres")
     private String titulo;
 
     @NotBlank(message = "El tipo es obligatorio")

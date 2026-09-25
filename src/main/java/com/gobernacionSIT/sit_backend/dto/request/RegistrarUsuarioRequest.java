@@ -10,11 +10,11 @@ import lombok.Setter;
 @Setter
 public class RegistrarUsuarioRequest {
 
-    @Size(max = 100)
+    @Size(max = 20, message = "El nombre no puede superar los 20 caracteres")
     private String nombre;
 
 
-    @Size(max = 100)
+    @Size(max = 20, message = "El apellido no puede superar los 20 caracteres")
     private String apellido;
 
     @NotBlank(message = "El usuario de acceso es obligatorio")
@@ -22,19 +22,20 @@ public class RegistrarUsuarioRequest {
     private String userLogin;
 
     @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+    @Size(min = 8, max = 8, message = "La contraseña debe tener exactamente 8 caracteres")
     private String password;
 
-    @Size(max = 20)
+    @Size(max = 20, message = "El cargo no puede superar los 20 caracteres")
     private String cargo;
 
-    @Pattern(regexp = "\\d{7,8}", message = "El teléfono debe tener 7 u 8 dígitos")
+    @NotBlank(message = "El teléfono es obligatorio")
+    @Pattern(regexp = "\\d{8}", message = "El teléfono debe tener exactamente 8 dígitos")
     private String telefono;
 
-    @Size(max = 40)
+    @Size(max = 20, message = "El área no puede superar los 20 caracteres")
     private String area;
 
-    @Size(max = 40)
+    @Size(max = 20, message = "La ubicación de oficina no puede superar los 20 caracteres")
     private String ubicacionOficina;
 
     private String nombreRol;
