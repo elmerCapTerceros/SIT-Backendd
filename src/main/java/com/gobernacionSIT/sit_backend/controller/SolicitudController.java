@@ -43,4 +43,10 @@ public class SolicitudController {
             @Valid @RequestBody AsignarSolicitudRequest request) {
         return ResponseEntity.ok(solicitudService.asignar(id, request));
     }
+
+    @GetMapping("/SolicitudesTecnicas")
+    @PreAuthorize("hasRole('SUPERVISOR')")
+    public ResponseEntity<List<SolicitudResponse>> listarTodas(Authentication authentication) {
+        return ResponseEntity.ok(solicitudService.listarTodaas());
+    }
 }

@@ -12,4 +12,7 @@ public interface SolicitudService {
     SolicitudResponse asignar(Long solicitudId, AsignarSolicitudRequest request);
 
     List<SolicitudResponse> listarPropias(String userLogin);
+
+    //Listar todas mis solictudes
+    List<SolicitudResponse> listarTodaas();
 }

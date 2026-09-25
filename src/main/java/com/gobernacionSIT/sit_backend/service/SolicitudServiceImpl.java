@@ -102,4 +102,12 @@ public class SolicitudServiceImpl implements SolicitudService {
                 solicitud.getCreatedAt(), solicitud.getUpdatedAt()
         );
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SolicitudResponse> listarTodaas() {
+        return solicitudRepository.findAll().stream()
+                .map(solicitud -> toResponse(solicitud, tecnicoId(solicitud.getId())))
+                .toList();
+    }
 }
