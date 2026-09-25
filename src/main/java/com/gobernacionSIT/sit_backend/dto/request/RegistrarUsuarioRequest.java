@@ -18,7 +18,7 @@ public class RegistrarUsuarioRequest {
     private String apellido;
 
     @NotBlank(message = "El usuario de acceso es obligatorio")
-    @Size(max = 30)
+    @Size(max = 30, message = "El usuario de acceso no puede superar los 30 caracteres")
     private String userLogin;
 
     @NotBlank(message = "La contraseña es obligatoria")
