@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +30,12 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new IllegalArgumentException("Ya existe un usuario con ese loginUser");
         }
 
-        Rol rol = rolRepository.findByNombreRol("FUNCIONARIO")
+        String nombreRol = request.getNombreRol();
+        if (nombreRol == null || nombreRol.isBlank()) {
+            nombreRol = "FUNCIONARIO";
+        }
+
+        Rol rol = rolRepository.findByNombreRol(nombreRol.trim().toUpperCase(Locale.ROOT))
                 .orElseThrow(() -> new IllegalArgumentException("Rol no válido"));
 
         Usuario usuario = new Usuario();
