@@ -265,4 +265,4 @@ Si el puerto `5433` o `8080` ya está en uso, cambia los valores en:
 
 ## Autor
 
-Proyecto desarrollado para el sistema SIT de la Gobernación.
+Capcito
