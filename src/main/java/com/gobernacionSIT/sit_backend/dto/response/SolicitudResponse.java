@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 public record SolicitudResponse(
         Long id,
+        String codigo,
         String titulo,
         String area,
         String categoria,
