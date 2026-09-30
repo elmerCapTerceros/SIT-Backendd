@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,7 @@ public class SolicitudServiceImpl implements SolicitudService {
         Usuario solicitante = buscarUsuario(userLogin);
 
         Solicitud solicitud = new Solicitud();
+        solicitud.setCodigo(String.format(Locale.ROOT, "UGE-%04d", solicitudRepository.siguienteNumeroCodigo()));
         solicitud.setTitulo(request.getTitulo());
         solicitud.setCategoria(request.getTipo());
         solicitud.setDescripcion(request.getDescripcion());
@@ -96,7 +98,7 @@ public class SolicitudServiceImpl implements SolicitudService {
 
     private SolicitudResponse toResponse(Solicitud solicitud, Long tecnicoId) {
         return new SolicitudResponse(
-                solicitud.getId(), solicitud.getTitulo(), solicitud.getArea(), solicitud.getCategoria(),
+            solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(), solicitud.getCategoria(),
                 solicitud.getDescripcion(), solicitud.getPrioridad(), solicitud.getEstado().getEstadoSolicitud(),
                 solicitud.getSolicitante().getId(), tecnicoId, solicitud.getVerificadoPorUsuario(),
                 solicitud.getCreatedAt(), solicitud.getUpdatedAt()

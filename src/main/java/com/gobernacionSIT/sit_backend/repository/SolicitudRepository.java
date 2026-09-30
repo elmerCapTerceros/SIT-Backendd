@@ -2,9 +2,13 @@ package com.gobernacionSIT.sit_backend.repository;
 
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface SolicitudRepository extends JpaRepository<Solicitud, Long> {
+
+    @Query(value = "SELECT nextval('solicitud_codigo_seq')", nativeQuery = true)
+    Long siguienteNumeroCodigo();
 
     List<Solicitud> findBySolicitante_Id(Long solicitanteId);
 
