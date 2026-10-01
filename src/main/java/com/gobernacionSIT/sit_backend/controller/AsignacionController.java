@@ -1,5 +1,6 @@
 package com.gobernacionSIT.sit_backend.controller;
 import com.gobernacionSIT.sit_backend.dto.request.AsignarTecnicoRequest;
+import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
 import com.gobernacionSIT.sit_backend.service.AsignacionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -39,13 +40,13 @@ public class AsignacionController {
 
     @GetMapping("/tecnico/{tecnicoId}/solicitudes")
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'TECNICO')")
-    public ResponseEntity<List<Long>> obtenerSolicitudesAsignadas(@PathVariable Long tecnicoId) {
+    public ResponseEntity<List<SolicitudResponse>> obtenerSolicitudesAsignadas(@PathVariable Long tecnicoId) {
         return ResponseEntity.ok(asignacionService.obtenerSolicitudesAsignadas(tecnicoId));
     }
 
     @GetMapping("/tecnico/{tecnicoId}/solicitudes/estado/{estadoSolicitud}")
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'TECNICO')")
-    public ResponseEntity<List<Long>> obtenerSolicitudesAsignadasPorEstado(
+    public ResponseEntity<List<SolicitudResponse>> obtenerSolicitudesAsignadasPorEstado(
             @PathVariable Long tecnicoId,
             @PathVariable String estadoSolicitud) {
         return ResponseEntity.ok(

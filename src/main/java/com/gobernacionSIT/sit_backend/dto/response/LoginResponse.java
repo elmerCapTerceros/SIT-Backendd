@@ -10,6 +10,7 @@ import lombok.Setter;
 public class LoginResponse {
 
     private String token;
+    private Long id;
     private String userLogin;
     private String rol;
     private boolean primerIngreso;

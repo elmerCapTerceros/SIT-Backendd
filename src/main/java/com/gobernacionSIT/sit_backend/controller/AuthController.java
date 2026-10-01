@@ -40,6 +40,7 @@ public class AuthController {
 
         return ResponseEntity.ok(new LoginResponse(
             token,
+            usuario.getId(),
             authentication.getName(),
             rol,
                 usuarioService.esPrimerIngreso(authentication.getName()),
