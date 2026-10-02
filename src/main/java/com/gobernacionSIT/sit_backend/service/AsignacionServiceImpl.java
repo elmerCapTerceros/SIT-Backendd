@@ -81,7 +81,7 @@ public class AsignacionServiceImpl implements AsignacionService {
     @Override
     public List<Long> listarTecnicos() {
         return usuarioRepository.findByRol_NombreRol("TECNICO").stream()
-            .map(Usuario::getId)
+            .map(usuario -> usuario.getId())
                 .toList();
     }
     
