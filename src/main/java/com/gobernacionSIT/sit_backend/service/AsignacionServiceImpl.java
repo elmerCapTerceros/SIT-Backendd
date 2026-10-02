@@ -73,7 +73,8 @@ public class AsignacionServiceImpl implements AsignacionService {
                 solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(),
                 solicitud.getCategoria(), solicitud.getDescripcion(), solicitud.getPrioridad(),
                 solicitud.getEstado().getEstadoSolicitud(), solicitud.getSolicitante().getId(),
-                asignacion.getTecnico().getId(), solicitud.getVerificadoPorUsuario(),
+                nombreCompleto(solicitud.getSolicitante()), asignacion.getTecnico().getId(),
+                solicitud.getVerificadoPorUsuario(),
                 solicitud.getCreatedAt(), solicitud.getUpdatedAt()
         );
     }
@@ -83,6 +84,14 @@ public class AsignacionServiceImpl implements AsignacionService {
         return usuarioRepository.findByRol_NombreRol("TECNICO").stream()
             .map(usuario -> usuario.getId())
                 .toList();
+    }
+
+    private String nombreCompleto(Usuario usuario) {
+        String nombre = usuario.getNombre();
+        String apellido = usuario.getApellido();
+        if (nombre == null || nombre.isBlank()) return apellido;
+        if (apellido == null || apellido.isBlank()) return nombre;
+        return nombre + " " + apellido;
     }
     
 }

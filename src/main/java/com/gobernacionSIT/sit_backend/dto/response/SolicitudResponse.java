@@ -12,6 +12,7 @@ public record SolicitudResponse(
         String prioridad,
         String estado,
         Long solicitanteId,
+        String solicitanteNombre,
         Long tecnicoId,
         Boolean verificadoPorUsuario,
         LocalDateTime createdAt,

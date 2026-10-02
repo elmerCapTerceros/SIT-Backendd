@@ -96,11 +96,20 @@ public class SolicitudServiceImpl implements SolicitudService {
                 .orElse(null);
     }
 
+    private String nombreCompleto(Usuario usuario) {
+        String nombre = usuario.getNombre();
+        String apellido = usuario.getApellido();
+        if (nombre == null || nombre.isBlank()) return apellido;
+        if (apellido == null || apellido.isBlank()) return nombre;
+        return nombre + " " + apellido;
+    }
+
     private SolicitudResponse toResponse(Solicitud solicitud, Long tecnicoId) {
         return new SolicitudResponse(
             solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(), solicitud.getCategoria(),
                 solicitud.getDescripcion(), solicitud.getPrioridad(), solicitud.getEstado().getEstadoSolicitud(),
-                solicitud.getSolicitante().getId(), tecnicoId, solicitud.getVerificadoPorUsuario(),
+                solicitud.getSolicitante().getId(), nombreCompleto(solicitud.getSolicitante()), tecnicoId,
+                solicitud.getVerificadoPorUsuario(),
                 solicitud.getCreatedAt(), solicitud.getUpdatedAt()
         );
     }
