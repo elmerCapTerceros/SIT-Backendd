@@ -1,4 +1,5 @@
 package com.gobernacionSIT.sit_backend.service;
+import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
 import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
@@ -6,6 +7,7 @@ import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
@@ -47,20 +49,33 @@ public class AsignacionServiceImpl implements AsignacionService {
     }
 
     @Override
-    public List<Long> obtenerSolicitudesAsignadas(Long tecnicoId) {
+    @Transactional(readOnly = true)
+    public List<SolicitudResponse> obtenerSolicitudesAsignadas(Long tecnicoId) {
         return asignacionTecnicoRepository.findByTecnicoId(tecnicoId)
                 .stream()
-                .map(asignacion -> asignacion.getSolicitud().getId())
+                .map(this::toSolicitudResponse)
                 .toList();
     }
 
     @Override
-    public List<Long> obtenerSolicitudesAsignadasPorEstado(Long tecnicoId, String estadoSolicitud) {
+    @Transactional(readOnly = true)
+    public List<SolicitudResponse> obtenerSolicitudesAsignadasPorEstado(Long tecnicoId, String estadoSolicitud) {
         return asignacionTecnicoRepository
                 .findByTecnico_IdAndSolicitud_Estado_EstadoSolicitud(tecnicoId, estadoSolicitud)
                 .stream()
-                .map(asignacion -> asignacion.getSolicitud().getId())
+                .map(this::toSolicitudResponse)
                 .toList();
+    }
+
+    private SolicitudResponse toSolicitudResponse(AsignacionTecnico asignacion) {
+        Solicitud solicitud = asignacion.getSolicitud();
+        return new SolicitudResponse(
+                solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(),
+                solicitud.getCategoria(), solicitud.getDescripcion(), solicitud.getPrioridad(),
+                solicitud.getEstado().getEstadoSolicitud(), solicitud.getSolicitante().getId(),
+                asignacion.getTecnico().getId(), solicitud.getVerificadoPorUsuario(),
+                solicitud.getCreatedAt(), solicitud.getUpdatedAt()
+        );
     }
 
     @Override

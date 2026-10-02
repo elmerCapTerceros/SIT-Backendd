@@ -1,4 +1,5 @@
 package com.gobernacionSIT.sit_backend.service;
+import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
 import java.util.List;
 
 public interface AsignacionService{
@@ -7,9 +8,9 @@ public interface AsignacionService{
     
     List<Long> obtenerTecnicosAsignados(Long solicitudId);
 
-    List<Long> obtenerSolicitudesAsignadas(Long tecnicoId);
+    List<SolicitudResponse> obtenerSolicitudesAsignadas(Long tecnicoId);
 
-    List<Long> obtenerSolicitudesAsignadasPorEstado(Long tecnicoId, String estadoSolicitud);
+    List<SolicitudResponse> obtenerSolicitudesAsignadasPorEstado(Long tecnicoId, String estadoSolicitud);
 
     List<Long> listarTecnicos ();
 
