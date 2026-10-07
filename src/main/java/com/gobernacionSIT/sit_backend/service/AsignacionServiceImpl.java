@@ -6,6 +6,7 @@ import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
@@ -50,7 +51,8 @@ public class AsignacionServiceImpl implements AsignacionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SolicitudResponse> obtenerSolicitudesAsignadas(Long tecnicoId) {
+    public List<SolicitudResponse> obtenerSolicitudesAsignadas(Long tecnicoId, String userLogin) {
+        validarTecnicoSolicitudes(tecnicoId, userLogin);
         return asignacionTecnicoRepository.findByTecnicoId(tecnicoId)
                 .stream()
                 .map(this::toSolicitudResponse)
@@ -59,12 +61,23 @@ public class AsignacionServiceImpl implements AsignacionService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SolicitudResponse> obtenerSolicitudesAsignadasPorEstado(Long tecnicoId, String estadoSolicitud) {
+    public List<SolicitudResponse> obtenerSolicitudesAsignadasPorEstado(
+            Long tecnicoId, String estadoSolicitud, String userLogin) {
+        validarTecnicoSolicitudes(tecnicoId, userLogin);
         return asignacionTecnicoRepository
                 .findByTecnico_IdAndSolicitud_Estado_EstadoSolicitud(tecnicoId, estadoSolicitud)
                 .stream()
                 .map(this::toSolicitudResponse)
                 .toList();
+    }
+
+    private void validarTecnicoSolicitudes(Long tecnicoId, String userLogin) {
+        Usuario usuario = usuarioRepository.findByUserLogin(userLogin)
+                .orElseThrow(() -> new AccessDeniedException("Usuario autenticado no encontrado"));
+        if ("TECNICO".equals(usuario.getRol().getNombreRol())
+                && !usuario.getId().equals(tecnicoId)) {
+            throw new AccessDeniedException("No puede consultar solicitudes asignadas a otro técnico");
+        }
     }
 
     private SolicitudResponse toSolicitudResponse(AsignacionTecnico asignacion) {

@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -40,17 +41,24 @@ public class AsignacionController {
 
     @GetMapping("/tecnico/{tecnicoId}/solicitudes")
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'TECNICO')")
-    public ResponseEntity<List<SolicitudResponse>> obtenerSolicitudesAsignadas(@PathVariable Long tecnicoId) {
-        return ResponseEntity.ok(asignacionService.obtenerSolicitudesAsignadas(tecnicoId));
+    public ResponseEntity<List<SolicitudResponse>> obtenerSolicitudesAsignadas(
+            @PathVariable Long tecnicoId,
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                asignacionService.obtenerSolicitudesAsignadas(tecnicoId, authentication.getName())
+        );
     }
 
     @GetMapping("/tecnico/{tecnicoId}/solicitudes/estado/{estadoSolicitud}")
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'TECNICO')")
     public ResponseEntity<List<SolicitudResponse>> obtenerSolicitudesAsignadasPorEstado(
             @PathVariable Long tecnicoId,
-            @PathVariable String estadoSolicitud) {
+            @PathVariable String estadoSolicitud,
+            Authentication authentication) {
         return ResponseEntity.ok(
-                asignacionService.obtenerSolicitudesAsignadasPorEstado(tecnicoId, estadoSolicitud)
+                asignacionService.obtenerSolicitudesAsignadasPorEstado(
+                        tecnicoId, estadoSolicitud, authentication.getName()
+                )
         );
     }
 }
