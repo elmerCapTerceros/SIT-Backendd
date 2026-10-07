@@ -7,6 +7,7 @@ import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.EstadoSolicitud;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
+import com.gobernacionSIT.sit_backend.exception.BusinessException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.EstadoSolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
@@ -53,7 +54,7 @@ public class SolicitudServiceImpl implements SolicitudService {
                 .orElseThrow(() -> new IllegalArgumentException("Técnico no encontrado"));
 
         if (!"TECNICO".equals(tecnico.getRol().getNombreRol())) {
-            throw new IllegalArgumentException("El usuario seleccionado no tiene rol de técnico");
+            throw new BusinessException("Las solicitudes solo se pueden asignar a usuarios con rol TECNICO");
         }
 
         solicitud.setPrioridad(request.getPrioridad());

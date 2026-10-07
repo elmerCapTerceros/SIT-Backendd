@@ -3,6 +3,7 @@ import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
 import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
+import com.gobernacionSIT.sit_backend.exception.BusinessException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
@@ -35,10 +36,17 @@ public class AsignacionServiceImpl implements AsignacionService {
             .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
         Usuario tecnico = usuarioRepository.findById(tecnicoId)
             .orElseThrow(() -> new IllegalArgumentException("Técnico no encontrado"));
+        validarRolTecnico(tecnico);
         AsignacionTecnico asignacion = new AsignacionTecnico();
         asignacion.setSolicitud(solicitud);
         asignacion.setTecnico(tecnico);
         asignacionTecnicoRepository.save(asignacion);
+    }
+
+    private void validarRolTecnico(Usuario usuario) {
+        if (!"TECNICO".equals(usuario.getRol().getNombreRol())) {
+            throw new BusinessException("Las solicitudes solo se pueden asignar a usuarios con rol TECNICO");
+        }
     }
 
     @Override
