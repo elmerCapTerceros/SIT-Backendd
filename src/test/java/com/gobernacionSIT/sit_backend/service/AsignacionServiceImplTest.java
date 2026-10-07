@@ -1,7 +1,9 @@
 package com.gobernacionSIT.sit_backend.service;
 
 import com.gobernacionSIT.sit_backend.entity.Rol;
+import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
+import com.gobernacionSIT.sit_backend.exception.BusinessException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
@@ -21,9 +23,20 @@ import static org.mockito.Mockito.when;
 class AsignacionServiceImplTest {
 
     private final AsignacionTecnicoRepository asignacionRepository = mock(AsignacionTecnicoRepository.class);
+    private final SolicitudRepository solicitudRepository = mock(SolicitudRepository.class);
     private final UsuarioRepository usuarioRepository = mock(UsuarioRepository.class);
     private final AsignacionServiceImpl service = new AsignacionServiceImpl(
-            asignacionRepository, mock(SolicitudRepository.class), usuarioRepository);
+            asignacionRepository, solicitudRepository, usuarioRepository);
+
+    @Test
+    void noAsignaSolicitudesAUsuariosConOtroRol() {
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.of(new Solicitud()));
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario(2L, "FUNCIONARIO")));
+
+        assertThrows(BusinessException.class, () -> service.asignar(5L, 2L));
+
+        verify(asignacionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
 
     @Test
     void tecnicoNoPuedeConsultarSolicitudesDeOtroTecnico() {
