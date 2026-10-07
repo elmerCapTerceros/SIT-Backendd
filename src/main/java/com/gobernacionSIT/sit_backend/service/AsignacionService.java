@@ -8,9 +8,10 @@ public interface AsignacionService{
     
     List<Long> obtenerTecnicosAsignados(Long solicitudId);
 
-    List<SolicitudResponse> obtenerSolicitudesAsignadas(Long tecnicoId);
+    List<SolicitudResponse> obtenerSolicitudesAsignadas(Long tecnicoId, String userLogin);
 
-    List<SolicitudResponse> obtenerSolicitudesAsignadasPorEstado(Long tecnicoId, String estadoSolicitud);
+    List<SolicitudResponse> obtenerSolicitudesAsignadasPorEstado(
+            Long tecnicoId, String estadoSolicitud, String userLogin);
 
     List<Long> listarTecnicos ();
 
