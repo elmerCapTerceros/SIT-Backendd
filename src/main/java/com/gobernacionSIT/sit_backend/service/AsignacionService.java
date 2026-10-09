@@ -13,6 +13,8 @@ public interface AsignacionService{
     List<SolicitudResponse> obtenerSolicitudesAsignadasPorEstado(
             Long tecnicoId, String estadoSolicitud, String userLogin);
 
+        SolicitudResponse aceptarSolicitud(Long solicitudId, String userLogin);
+
     List<Long> listarTecnicos ();
 
 }

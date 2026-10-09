@@ -38,6 +38,11 @@ public class SolicitudServiceImpl implements SolicitudService {
         solicitud.setTitulo(request.getTitulo());
         solicitud.setCategoria(request.getTipo());
         solicitud.setDescripcion(request.getDescripcion());
+        // NUEVO: estos campos no se guardaban y por eso el modal los mostraba vacíos.
+        // Si CrearSolicitudRequest usa otros nombres de getter, ajústalos (o bórralos si no existen).
+        solicitud.setUbicacion(request.getUbicacion());
+        solicitud.setEquipoDanado(request.getEquipoDanado());
+        solicitud.setVerificadoPorUsuario(false);
         solicitud.setArea(solicitante.getArea());
         solicitud.setSolicitante(solicitante);
         solicitud.setEstado(buscarEstado("PENDIENTE"));
@@ -58,7 +63,9 @@ public class SolicitudServiceImpl implements SolicitudService {
         }
 
         solicitud.setPrioridad(request.getPrioridad());
-        solicitud.setEstado(buscarEstado("EN_PROCESO"));
+        // CAMBIO: antes pasaba directo a EN_PROCESO. Ahora queda ASIGNADA hasta que el técnico acepte.
+        // Requiere una fila "ASIGNADA" en la tabla de estados.
+        solicitud.setEstado(buscarEstado("ASIGNADA"));
         AsignacionTecnico asignacion = asignacionTecnicoRepository
                 .findBySolicitud_Id(solicitudId)
                 .stream()
@@ -111,7 +118,10 @@ public class SolicitudServiceImpl implements SolicitudService {
                 solicitud.getDescripcion(), solicitud.getPrioridad(), solicitud.getEstado().getEstadoSolicitud(),
                 solicitud.getSolicitante().getId(), nombreCompleto(solicitud.getSolicitante()), tecnicoId,
                 solicitud.getVerificadoPorUsuario(),
-                solicitud.getCreatedAt(), solicitud.getUpdatedAt()
+                solicitud.getCreatedAt(), solicitud.getUpdatedAt(), solicitud.getUbicacion(),
+                solicitud.getEquipoDanado(), solicitud.getSolicitante().getCargo(),
+                solicitud.getSolicitante().getTelefono(), solicitud.getSolicitante().getArea(),
+                solicitud.getSolicitante().getUbicacionOficina()
         );
     }
 

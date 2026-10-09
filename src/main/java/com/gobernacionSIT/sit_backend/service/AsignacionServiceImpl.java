@@ -1,15 +1,18 @@
 package com.gobernacionSIT.sit_backend.service;
+
 import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
 import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
+import com.gobernacionSIT.sit_backend.repository.EstadoSolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
@@ -18,13 +21,16 @@ public class AsignacionServiceImpl implements AsignacionService {
     private final AsignacionTecnicoRepository asignacionTecnicoRepository;
     private final SolicitudRepository solicitudRepository;
     private final UsuarioRepository usuarioRepository;
+    private final EstadoSolicitudRepository estadoSolicitudRepository;
 
     public AsignacionServiceImpl(AsignacionTecnicoRepository asignacionTecnicoRepository,
                                  SolicitudRepository solicitudRepository,
-                                 UsuarioRepository usuarioRepository) {
+                                 UsuarioRepository usuarioRepository,
+                                 EstadoSolicitudRepository estadoSolicitudRepository) {
         this.asignacionTecnicoRepository = asignacionTecnicoRepository;
         this.solicitudRepository = solicitudRepository;
         this.usuarioRepository = usuarioRepository;
+        this.estadoSolicitudRepository = estadoSolicitudRepository;
     }
 
     @Override
@@ -79,6 +85,34 @@ public class AsignacionServiceImpl implements AsignacionService {
                 .toList();
     }
 
+    /**
+     * El técnico lee el detalle, acepta, y la solicitud pasa a EN_PROCESO.
+     */
+    @Override
+    @Transactional
+    public SolicitudResponse aceptarSolicitud(Long solicitudId, String userLogin) {
+        Usuario usuario = usuarioRepository.findByUserLogin(userLogin)
+                .orElseThrow(() -> new AccessDeniedException("Usuario autenticado no encontrado"));
+
+        AsignacionTecnico asignacion = asignacionTecnicoRepository.findBySolicitud_Id(solicitudId)
+                .stream()
+                .filter(a -> a.getTecnico().getId().equals(usuario.getId()))
+                .findFirst()
+                .orElseThrow(() -> new AccessDeniedException("Esta solicitud no está asignada a usted"));
+
+        Solicitud solicitud = asignacion.getSolicitud();
+        String actual = solicitud.getEstado().getEstadoSolicitud();
+        if (!List.of("ASIGNADA", "PENDIENTE").contains(actual)) {
+            throw new BusinessException("La solicitud ya fue aceptada o no admite este cambio");
+        }
+
+        solicitud.setEstado(estadoSolicitudRepository.findByEstadoSolicitud("EN_PROCESO")
+                .orElseThrow(() -> new IllegalStateException("Estado no configurado: EN_PROCESO")));
+        solicitudRepository.save(solicitud);
+
+        return toSolicitudResponse(asignacion);
+    }
+
     private void validarTecnicoSolicitudes(Long tecnicoId, String userLogin) {
         Usuario usuario = usuarioRepository.findByUserLogin(userLogin)
                 .orElseThrow(() -> new AccessDeniedException("Usuario autenticado no encontrado"));
@@ -96,7 +130,10 @@ public class AsignacionServiceImpl implements AsignacionService {
                 solicitud.getEstado().getEstadoSolicitud(), solicitud.getSolicitante().getId(),
                 nombreCompleto(solicitud.getSolicitante()), asignacion.getTecnico().getId(),
                 solicitud.getVerificadoPorUsuario(),
-                solicitud.getCreatedAt(), solicitud.getUpdatedAt()
+                solicitud.getCreatedAt(), solicitud.getUpdatedAt(), solicitud.getUbicacion(),
+                solicitud.getEquipoDanado(), solicitud.getSolicitante().getCargo(),
+                solicitud.getSolicitante().getTelefono(), solicitud.getSolicitante().getArea(),
+                solicitud.getSolicitante().getUbicacionOficina()
         );
     }
 
@@ -114,5 +151,5 @@ public class AsignacionServiceImpl implements AsignacionService {
         if (apellido == null || apellido.isBlank()) return nombre;
         return nombre + " " + apellido;
     }
-    
+
 }

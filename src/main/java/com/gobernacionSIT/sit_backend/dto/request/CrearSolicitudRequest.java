@@ -23,4 +23,10 @@ public class CrearSolicitudRequest {
 
     @Size(max = 500, message = "La descripción no puede superar los 500 caracteres")
     private String descripcion;
+
+    @Size(max = 150, message = "La ubicación no puede superar los 150 caracteres")
+    private String ubicacion;
+
+    @Size(max = 150, message = "El equipo dañado no puede superar los 150 caracteres")
+    private String equipoDanado;
 }

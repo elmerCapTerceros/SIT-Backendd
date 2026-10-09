@@ -16,6 +16,12 @@ public record SolicitudResponse(
         Long tecnicoId,
         Boolean verificadoPorUsuario,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String ubicacion,
+        String equipoDanado,
+        String solicitanteCargo,
+        String solicitanteTelefono,
+        String solicitanteArea,
+        String solicitanteUbicacionOficina
 ) {
 }
