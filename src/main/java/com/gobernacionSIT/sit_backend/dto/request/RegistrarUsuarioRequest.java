@@ -22,7 +22,7 @@ public class RegistrarUsuarioRequest {
     private String userLogin;
 
     @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 8, max = 8, message = "La contraseña debe tener exactamente 8 caracteres")
+    @Size(min = 3, max = 30, message = "La contraseña debe tener entre 3 y 30 caracteres")
     private String password;
 
     @Size(max = 20, message = "El cargo no puede superar los 20 caracteres")
