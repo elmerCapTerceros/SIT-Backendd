@@ -8,6 +8,7 @@ import com.gobernacionSIT.sit_backend.entity.EstadoSolicitud;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
+import com.gobernacionSIT.sit_backend.exception.ResourceNotFoundException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.EstadoSolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
@@ -121,5 +122,16 @@ public class SolicitudServiceImpl implements SolicitudService {
         return solicitudRepository.findAll().stream()
                 .map(solicitud -> toResponse(solicitud, tecnicoId(solicitud.getId())))
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public void actualizarEstadoSolicitud(Long solicitudId, Long estadoId) {
+        Solicitud solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
+        EstadoSolicitud estado = estadoSolicitudRepository.findById(estadoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Estado de solicitud no encontrado"));
+
+        solicitud.setEstado(estado);
     }
 }

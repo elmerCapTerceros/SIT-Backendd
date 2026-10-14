@@ -1,10 +1,12 @@
 package com.gobernacionSIT.sit_backend.service;
 
 import com.gobernacionSIT.sit_backend.dto.request.AsignarSolicitudRequest;
+import com.gobernacionSIT.sit_backend.entity.EstadoSolicitud;
 import com.gobernacionSIT.sit_backend.entity.Rol;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
+import com.gobernacionSIT.sit_backend.exception.ResourceNotFoundException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.EstadoSolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -25,10 +28,11 @@ class SolicitudServiceImplTest {
     private final SolicitudRepository solicitudRepository = mock(SolicitudRepository.class);
     private final AsignacionTecnicoRepository asignacionRepository = mock(AsignacionTecnicoRepository.class);
     private final UsuarioRepository usuarioRepository = mock(UsuarioRepository.class);
+    private final EstadoSolicitudRepository estadoRepository = mock(EstadoSolicitudRepository.class);
     private final SolicitudServiceImpl service = new SolicitudServiceImpl(
             solicitudRepository,
             usuarioRepository,
-            mock(EstadoSolicitudRepository.class),
+            estadoRepository,
             asignacionRepository);
 
     @Test
@@ -43,6 +47,29 @@ class SolicitudServiceImplTest {
 
         verify(solicitudRepository, never()).save(any(Solicitud.class));
         verify(asignacionRepository, never()).save(any());
+    }
+
+    @Test
+    void actualizaUnicamenteEstadoDeSolicitud() {
+        Solicitud solicitud = new Solicitud();
+        EstadoSolicitud estado = new EstadoSolicitud();
+        estado.setId(3L);
+        estado.setEstadoSolicitud("CONCLUIDA");
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud));
+        when(estadoRepository.findById(3L)).thenReturn(Optional.of(estado));
+
+        service.actualizarEstadoSolicitud(5L, 3L);
+
+        assertSame(estado, solicitud.getEstado());
+        verify(solicitudRepository, never()).save(any(Solicitud.class));
+    }
+
+    @Test
+    void informaSiLaSolicitudNoExisteAlActualizarEstado() {
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.empty());
+
+        assertThrows(ResourceNotFoundException.class,
+                () -> service.actualizarEstadoSolicitud(5L, 3L));
     }
 
     private Usuario usuario(Long id, String nombreRol) {

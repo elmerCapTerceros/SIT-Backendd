@@ -1,6 +1,7 @@
 package com.gobernacionSIT.sit_backend.controller;
 
 import com.gobernacionSIT.sit_backend.dto.request.AsignarSolicitudRequest;
+import com.gobernacionSIT.sit_backend.dto.request.ActualizarEstadoSolicitudRequest;
 import com.gobernacionSIT.sit_backend.dto.request.CrearSolicitudRequest;
 import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
 import com.gobernacionSIT.sit_backend.service.SolicitudService;
@@ -44,8 +45,16 @@ public class SolicitudController {
         return ResponseEntity.ok(solicitudService.asignar(id, request));
     }
 
-    @GetMapping("/SolicitudesTecnicas")
+    @PutMapping("/ActualizarEstado")
     @PreAuthorize("hasRole('SUPERVISOR')")
+    public ResponseEntity<Void> actualizarEstado(
+            @Valid @RequestBody ActualizarEstadoSolicitudRequest request) {
+        solicitudService.actualizarEstadoSolicitud(request.getSolicitud(), request.getEstadoId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/SolicitudesTecnicas")
+    @PreAuthorize("hasAnyRole('FUNCIONARIO', 'SUPERVISOR')")
     public ResponseEntity<List<SolicitudResponse>> listarTodas(Authentication authentication) {
         return ResponseEntity.ok(solicitudService.listarTodaas());
     }
