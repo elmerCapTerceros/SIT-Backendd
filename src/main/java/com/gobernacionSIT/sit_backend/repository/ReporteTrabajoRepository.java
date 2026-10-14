@@ -8,7 +8,11 @@ import java.util.Optional;
 public interface ReporteTrabajoRepository extends JpaRepository<ReporteTrabajo, Long> {
     Optional<ReporteTrabajo> findBySolicitud_Id(Long solicitudId);
 
+    boolean existsBySolicitud_Id(Long solicitudId);
+
     List<ReporteTrabajo> findByAsignacionTecnico_Tecnico_Id(Long tecnicoId);
+
+    List<ReporteTrabajo> findByAsignacionTecnico_Tecnico_UserLogin(String userLogin);
 
     List<ReporteTrabajo> findByEstadoFinal(String estadoFinal);
 }
