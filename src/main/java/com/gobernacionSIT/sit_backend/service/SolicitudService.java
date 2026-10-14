@@ -15,4 +15,6 @@ public interface SolicitudService {
 
     //Listar todas mis solictudes
     List<SolicitudResponse> listarTodaas();
+
+    void actualizarEstadoSolicitud(Long solicitudId, Long estadoId);
 }
