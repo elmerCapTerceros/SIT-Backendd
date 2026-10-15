@@ -54,6 +54,7 @@ public class ReporteTrabajoServiceImpl implements ReporteTrabajoService {
                 reporte.getSolicitud().getId(),
                 reporte.getAsignacionTecnico().getId(),
                 reporte.getAsignacionTecnico().getTecnico().getId(),
+                reporte.getSolicitud().getCodigo(),
                 reporte.getTipoEquipo(),
                 reporte.getDiagnostico(),
                 reporte.getTrabajoRealizado(),
