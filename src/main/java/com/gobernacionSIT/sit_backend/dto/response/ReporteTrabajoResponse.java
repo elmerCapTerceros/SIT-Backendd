@@ -7,6 +7,7 @@ public record ReporteTrabajoResponse(
         Long solicitudId,
         Long asignacionTecnicoId,
         Long tecnicoId,
+        String codigoSolicitud,
         String tipoEquipo,
         String diagnostico,
         String trabajoRealizado,
