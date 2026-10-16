@@ -40,6 +40,7 @@ public class SolicitudServiceImpl implements SolicitudService {
         solicitud.setCategoria(request.getTipo());
         solicitud.setDescripcion(request.getDescripcion());
         solicitud.setArea(solicitante.getArea());
+        solicitud.setUbicacion(solicitante.getUbicacionOficina());
         solicitud.setSolicitante(solicitante);
         solicitud.setEstado(buscarEstado("PENDIENTE"));
 
@@ -108,7 +109,8 @@ public class SolicitudServiceImpl implements SolicitudService {
 
     private SolicitudResponse toResponse(Solicitud solicitud, Long tecnicoId) {
         return new SolicitudResponse(
-            solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(), solicitud.getCategoria(),
+            solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(),
+                solicitud.getUbicacion(), solicitud.getCategoria(),
                 solicitud.getDescripcion(), solicitud.getPrioridad(), solicitud.getEstado().getEstadoSolicitud(),
                 solicitud.getSolicitante().getId(), nombreCompleto(solicitud.getSolicitante()), tecnicoId,
                 solicitud.getVerificadoPorUsuario(),

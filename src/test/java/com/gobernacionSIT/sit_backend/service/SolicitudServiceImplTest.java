@@ -1,6 +1,7 @@
 package com.gobernacionSIT.sit_backend.service;
 
 import com.gobernacionSIT.sit_backend.dto.request.AsignarSolicitudRequest;
+import com.gobernacionSIT.sit_backend.dto.request.CrearSolicitudRequest;
 import com.gobernacionSIT.sit_backend.entity.EstadoSolicitud;
 import com.gobernacionSIT.sit_backend.entity.Rol;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,6 +36,28 @@ class SolicitudServiceImplTest {
             usuarioRepository,
             estadoRepository,
             asignacionRepository);
+
+    @Test
+    void creaSolicitudConUbicacionDeOficinaDelSolicitante() {
+        Usuario solicitante = usuario(1L, "FUNCIONARIO");
+        solicitante.setUbicacionOficina("Edificio Central");
+        EstadoSolicitud estado = new EstadoSolicitud();
+        estado.setEstadoSolicitud("PENDIENTE");
+        CrearSolicitudRequest request = new CrearSolicitudRequest();
+        request.setTitulo("Reparar computadora");
+        request.setTipo("PC");
+        when(usuarioRepository.findByUserLogin("funcionario")).thenReturn(Optional.of(solicitante));
+        when(solicitudRepository.siguienteNumeroCodigo()).thenReturn(1L);
+        when(estadoRepository.findByEstadoSolicitud("PENDIENTE")).thenReturn(Optional.of(estado));
+        when(solicitudRepository.save(any(Solicitud.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.crear("funcionario", request);
+
+        assertEquals("Edificio Central", response.ubicacionOficina());
+        verify(solicitudRepository).save(org.mockito.ArgumentMatchers.argThat(
+                solicitud -> "Edificio Central".equals(solicitud.getUbicacion())));
+    }
 
     @Test
     void rechazaAsignacionCuandoUsuarioNoEsTecnico() {

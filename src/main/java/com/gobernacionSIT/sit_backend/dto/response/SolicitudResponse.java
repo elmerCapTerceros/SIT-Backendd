@@ -7,6 +7,7 @@ public record SolicitudResponse(
         String codigo,
         String titulo,
         String area,
+        String ubicacionOficina,
         String categoria,
         String descripcion,
         String prioridad,

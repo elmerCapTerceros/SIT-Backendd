@@ -92,7 +92,7 @@ public class AsignacionServiceImpl implements AsignacionService {
         Solicitud solicitud = asignacion.getSolicitud();
         return new SolicitudResponse(
                 solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(),
-                solicitud.getCategoria(), solicitud.getDescripcion(), solicitud.getPrioridad(),
+                solicitud.getUbicacion(), solicitud.getCategoria(), solicitud.getDescripcion(), solicitud.getPrioridad(),
                 solicitud.getEstado().getEstadoSolicitud(), solicitud.getSolicitante().getId(),
                 nombreCompleto(solicitud.getSolicitante()), asignacion.getTecnico().getId(),
                 solicitud.getVerificadoPorUsuario(),
