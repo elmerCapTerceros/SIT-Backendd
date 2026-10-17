@@ -209,9 +209,17 @@ public class SolicitudServiceImpl implements SolicitudService {
                 solicitud.getUbicacion(), solicitud.getCategoria(),
                 solicitud.getDescripcion(), solicitud.getPrioridad(), solicitud.getEstado().getEstadoSolicitud(),
                 solicitud.getSolicitante().getId(), nombreCompleto(solicitud.getSolicitante()),
-                tecnicoId, solicitud.getVerificadoPorUsuario(), solicitud.getCreatedAt(), solicitud.getUpdatedAt(),
+                tecnicoId, asignacionTecnicoId(solicitud.getId()), solicitud.getVerificadoPorUsuario(),
+                solicitud.getCreatedAt(), solicitud.getUpdatedAt(),
                 solicitud.getSolicitante().getCargo(), solicitud.getSolicitante().getTelefono(),
                 solicitud.getMotivoRechazo()
         );
+    }
+
+    private Long asignacionTecnicoId(Long solicitudId) {
+        return asignacionTecnicoRepository.findBySolicitud_Id(solicitudId).stream()
+                .findFirst()
+                .map(asignacion -> asignacion.getId()) 
+                .orElse(null);
     }
 }

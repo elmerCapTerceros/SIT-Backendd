@@ -54,7 +54,7 @@ class SolicitudServiceImplTest {
 
         var response = service.crear("funcionario", request);
 
-        assertEquals("Edificio Central", response.ubicacionOficina());
+        assertEquals("Edificio Central", response.ubicacion());
         verify(solicitudRepository).save(org.mockito.ArgumentMatchers.argThat(
                 solicitud -> "Edificio Central".equals(solicitud.getUbicacion())));
     }

@@ -57,4 +57,16 @@ class RequestValidationTests {
 
         assertTrue(validator.validate(request).isEmpty());
     }
+
+    @Test
+    void allowsReportToResolveAssignmentFromSolicitudId() {
+        CrearReporteTrabajoRequest request = new CrearReporteTrabajoRequest();
+        request.setSolicitudId(20L);
+        request.setDiagnostico("Diagnóstico registrado");
+        request.setTrabajoRealizado("Trabajo completado");
+        request.setEstadoFinal("SOLUCIONADO");
+
+        assertTrue(validator.validate(request).stream()
+                .noneMatch(error -> error.getPropertyPath().toString().equals("asignacionTecnicoId")));
+    }
 }

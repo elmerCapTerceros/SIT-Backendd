@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -48,6 +49,26 @@ class ReporteTrabajoServiceImplTest {
         assertEquals(10L, response.asignacionTecnicoId());
         assertEquals(99L, response.tecnicoId());
         assertEquals("SOLUCIONADO", response.estadoFinal());
+        assertEquals("2026-10-17", response.fechaAtencion().toString());
+        assertEquals("Edificio Central", response.unidad());
+        assertEquals("STI-0042", response.numeroFormulario());
+        verify(reporteRepository).save(any(ReporteTrabajo.class));
+    }
+
+    @Test
+    void creaReporteBuscandoLaAsignacionPorSolicitud() {
+        AsignacionTecnico asignacion = asignacion(10L, 20L, "tecnico1");
+        CrearReporteTrabajoRequest request = request();
+        request.setAsignacionTecnicoId(null);
+        request.setSolicitudId(20L);
+        when(asignacionRepository.findBySolicitud_Id(20L)).thenReturn(List.of(asignacion));
+        when(reporteRepository.existsBySolicitud_Id(20L)).thenReturn(false);
+        when(reporteRepository.save(any(ReporteTrabajo.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.crear("tecnico1", request);
+
+        assertEquals(20L, response.solicitudId());
+        assertEquals(10L, response.asignacionTecnicoId());
         verify(reporteRepository).save(any(ReporteTrabajo.class));
     }
 
@@ -87,6 +108,9 @@ class ReporteTrabajoServiceImplTest {
         request.setTrabajoRealizado("Limpieza y prueba");
         request.setEstadoFinal("SOLUCIONADO");
         request.setObservacion("Equipo operativo");
+        request.setNumeroFormulario("STI-0042");
+        request.setFechaAtencion(java.time.LocalDate.of(2026, 10, 17));
+        request.setUnidad("Edificio Central");
         return request;
     }
 
