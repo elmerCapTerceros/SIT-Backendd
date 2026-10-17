@@ -17,6 +17,9 @@ public record SolicitudResponse(
         Long tecnicoId,
         Boolean verificadoPorUsuario,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String solicitanteCargo,
+        String solicitanteTelefono,
+        String motivoRechazo
 ) {
 }

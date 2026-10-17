@@ -35,6 +35,9 @@ public class Solicitud {
     @Column(name = "equipo_danado", length = 150)
     private String equipoDanado;
 
+    @Column(name = "motivo_rechazo", length = 500)
+    private String motivoRechazo;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "estado_id", nullable = false)
     private EstadoSolicitud estado;

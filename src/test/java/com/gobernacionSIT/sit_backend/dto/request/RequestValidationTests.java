@@ -40,4 +40,21 @@ class RequestValidationTests {
         assertTrue(fields.contains("telefono"));
         assertTrue(fields.contains("password"));
     }
+
+    @Test
+    void rejectsRejectionReasonOutsideAllowedLength() {
+        RechazarSolicitudRequest request = new RechazarSolicitudRequest();
+        request.setMotivo("Muy corto");
+
+        assertTrue(validator.validate(request).stream()
+                .anyMatch(error -> error.getPropertyPath().toString().equals("motivo")));
+    }
+
+    @Test
+    void acceptsRejectionReasonWithAllowedLength() {
+        RechazarSolicitudRequest request = new RechazarSolicitudRequest();
+        request.setMotivo("Motivo valido para rechazo");
+
+        assertTrue(validator.validate(request).isEmpty());
+    }
 }

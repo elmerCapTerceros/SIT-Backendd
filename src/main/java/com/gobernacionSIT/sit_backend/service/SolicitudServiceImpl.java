@@ -2,6 +2,7 @@ package com.gobernacionSIT.sit_backend.service;
 
 import com.gobernacionSIT.sit_backend.dto.request.AsignarSolicitudRequest;
 import com.gobernacionSIT.sit_backend.dto.request.CrearSolicitudRequest;
+import com.gobernacionSIT.sit_backend.dto.request.RechazarSolicitudRequest;
 import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
 import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.EstadoSolicitud;
@@ -24,6 +25,11 @@ import java.util.Locale;
 @RequiredArgsConstructor
 public class SolicitudServiceImpl implements SolicitudService {
 
+    private static final String PENDIENTE = "PENDIENTE";
+    private static final String EN_PROCESO = "EN_PROCESO";
+    private static final String CONCLUIDA = "CONCLUIDA";
+    private static final String RECHAZADA = "RECHAZADA";
+
     private final SolicitudRepository solicitudRepository;
     private final UsuarioRepository usuarioRepository;
     private final EstadoSolicitudRepository estadoSolicitudRepository;
@@ -42,7 +48,7 @@ public class SolicitudServiceImpl implements SolicitudService {
         solicitud.setArea(solicitante.getArea());
         solicitud.setUbicacion(solicitante.getUbicacionOficina());
         solicitud.setSolicitante(solicitante);
-        solicitud.setEstado(buscarEstado("PENDIENTE"));
+        solicitud.setEstado(buscarEstado(PENDIENTE));
 
         return toResponse(solicitudRepository.save(solicitud), null);
     }
@@ -60,7 +66,9 @@ public class SolicitudServiceImpl implements SolicitudService {
         }
 
         solicitud.setPrioridad(request.getPrioridad());
-        solicitud.setEstado(buscarEstado("EN_PROCESO"));
+        // CAMBIO: al asignar, la solicitud sigue PENDIENTE.
+        // Pasa a EN_PROCESO recién cuando el técnico pulsa "Atender".
+        solicitud.setEstado(buscarEstado(PENDIENTE));
         AsignacionTecnico asignacion = asignacionTecnicoRepository
                 .findBySolicitud_Id(solicitudId)
                 .stream()
@@ -73,6 +81,49 @@ public class SolicitudServiceImpl implements SolicitudService {
         return toResponse(solicitudRepository.save(solicitud), tecnico.getId());
     }
 
+    // ---------------------------------------------------------------
+    // Acciones del técnico sobre una solicitud asignada
+    // ---------------------------------------------------------------
+
+    /** PENDIENTE -> EN_PROCESO */
+    @Override
+    @Transactional
+    public SolicitudResponse atender(Long solicitudId, String userLogin) {
+        Solicitud solicitud = obtenerSolicitudAsignada(solicitudId, userLogin);
+        validarEstadoActual(solicitud, PENDIENTE, "atender");
+
+        solicitud.setEstado(buscarEstado(EN_PROCESO));
+        return toResponse(solicitudRepository.save(solicitud), tecnicoId(solicitudId));
+    }
+
+    /** PENDIENTE -> RECHAZADA (el motivo es obligatorio) */
+    @Override
+    @Transactional
+    public SolicitudResponse rechazar(Long solicitudId, String userLogin, RechazarSolicitudRequest request) {
+        Solicitud solicitud = obtenerSolicitudAsignada(solicitudId, userLogin);
+        validarEstadoActual(solicitud, PENDIENTE, "rechazar");
+
+        String motivo = request.getMotivo() == null ? "" : request.getMotivo().trim();
+        if (motivo.length() < 10 || motivo.length() > 500) {
+            throw new BusinessException("El motivo debe tener entre 10 y 500 caracteres");
+        }
+
+        solicitud.setMotivoRechazo(motivo);
+        solicitud.setEstado(buscarEstado(RECHAZADA));
+        return toResponse(solicitudRepository.save(solicitud), tecnicoId(solicitudId));
+    }
+
+    /** EN_PROCESO -> CONCLUIDA */
+    @Override
+    @Transactional
+    public SolicitudResponse concluir(Long solicitudId, String userLogin) {
+        Solicitud solicitud = obtenerSolicitudAsignada(solicitudId, userLogin);
+        validarEstadoActual(solicitud, EN_PROCESO, "concluir");
+
+        solicitud.setEstado(buscarEstado(CONCLUIDA));
+        return toResponse(solicitudRepository.save(solicitud), tecnicoId(solicitudId));
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<SolicitudResponse> listarPropias(String userLogin) {
@@ -80,6 +131,51 @@ public class SolicitudServiceImpl implements SolicitudService {
         return solicitudRepository.findBySolicitante_Id(usuario.getId()).stream()
                 .map(solicitud -> toResponse(solicitud, tecnicoId(solicitud.getId())))
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SolicitudResponse> listarTodaas() {
+        return solicitudRepository.findAll().stream()
+                .map(solicitud -> toResponse(solicitud, tecnicoId(solicitud.getId())))
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void actualizarEstadoSolicitud(Long solicitudId, Long estadoId) {
+        Solicitud solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
+        EstadoSolicitud estado = estadoSolicitudRepository.findById(estadoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Estado de solicitud no encontrado"));
+
+        solicitud.setEstado(estado);
+    }
+
+    // ---------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------
+
+    /** Busca la solicitud y verifica que esté asignada al técnico que hace la petición. */
+    private Solicitud obtenerSolicitudAsignada(Long solicitudId, String userLogin) {
+        Usuario tecnico = buscarUsuario(userLogin);
+        Solicitud solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
+
+        boolean asignadaAlTecnico = asignacionTecnicoRepository.findBySolicitud_Id(solicitudId).stream()
+                .anyMatch(asignacion -> asignacion.getTecnico().getId().equals(tecnico.getId()));
+        if (!asignadaAlTecnico) {
+            throw new BusinessException("Esta solicitud no está asignada a tu usuario");
+        }
+        return solicitud;
+    }
+
+    private void validarEstadoActual(Solicitud solicitud, String estadoEsperado, String accion) {
+        String actual = solicitud.getEstado().getEstadoSolicitud();
+        if (!estadoEsperado.equals(actual)) {
+            throw new BusinessException(
+                    "Solo se puede " + accion + " una solicitud en estado " + estadoEsperado + " (actual: " + actual + ")");
+        }
     }
 
     private Usuario buscarUsuario(String userLogin) {
@@ -109,31 +205,13 @@ public class SolicitudServiceImpl implements SolicitudService {
 
     private SolicitudResponse toResponse(Solicitud solicitud, Long tecnicoId) {
         return new SolicitudResponse(
-            solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(),
+                solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(),
                 solicitud.getUbicacion(), solicitud.getCategoria(),
                 solicitud.getDescripcion(), solicitud.getPrioridad(), solicitud.getEstado().getEstadoSolicitud(),
-                solicitud.getSolicitante().getId(), nombreCompleto(solicitud.getSolicitante()), tecnicoId,
-                solicitud.getVerificadoPorUsuario(),
-                solicitud.getCreatedAt(), solicitud.getUpdatedAt()
+                solicitud.getSolicitante().getId(), nombreCompleto(solicitud.getSolicitante()),
+                tecnicoId, solicitud.getVerificadoPorUsuario(), solicitud.getCreatedAt(), solicitud.getUpdatedAt(),
+                solicitud.getSolicitante().getCargo(), solicitud.getSolicitante().getTelefono(),
+                solicitud.getMotivoRechazo()
         );
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<SolicitudResponse> listarTodaas() {
-        return solicitudRepository.findAll().stream()
-                .map(solicitud -> toResponse(solicitud, tecnicoId(solicitud.getId())))
-                .toList();
-    }
-
-    @Override
-    @Transactional
-    public void actualizarEstadoSolicitud(Long solicitudId, Long estadoId) {
-        Solicitud solicitud = solicitudRepository.findById(solicitudId)
-                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
-        EstadoSolicitud estado = estadoSolicitudRepository.findById(estadoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Estado de solicitud no encontrado"));
-
-        solicitud.setEstado(estado);
     }
 }

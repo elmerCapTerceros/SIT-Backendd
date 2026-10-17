@@ -95,8 +95,9 @@ public class AsignacionServiceImpl implements AsignacionService {
                 solicitud.getUbicacion(), solicitud.getCategoria(), solicitud.getDescripcion(), solicitud.getPrioridad(),
                 solicitud.getEstado().getEstadoSolicitud(), solicitud.getSolicitante().getId(),
                 nombreCompleto(solicitud.getSolicitante()), asignacion.getTecnico().getId(),
-                solicitud.getVerificadoPorUsuario(),
-                solicitud.getCreatedAt(), solicitud.getUpdatedAt()
+                solicitud.getVerificadoPorUsuario(), solicitud.getCreatedAt(), solicitud.getUpdatedAt(),
+                solicitud.getSolicitante().getCargo(), solicitud.getSolicitante().getTelefono(),
+                solicitud.getMotivoRechazo()
         );
     }
 
