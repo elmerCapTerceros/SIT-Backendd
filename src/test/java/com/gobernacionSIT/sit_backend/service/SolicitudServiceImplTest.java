@@ -7,18 +7,17 @@ import com.gobernacionSIT.sit_backend.entity.Rol;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
-import com.gobernacionSIT.sit_backend.exception.ResourceNotFoundException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.EstadoSolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -74,26 +73,75 @@ class SolicitudServiceImplTest {
     }
 
     @Test
-    void actualizaUnicamenteEstadoDeSolicitud() {
-        Solicitud solicitud = new Solicitud();
+    void noPermiteReasignarUnaSolicitudQueYaEstaEnProceso() {
         EstadoSolicitud estado = new EstadoSolicitud();
-        estado.setId(3L);
-        estado.setEstadoSolicitud("CONCLUIDA");
+        estado.setEstadoSolicitud("EN_PROCESO");
+        Solicitud solicitud = new Solicitud();
+        solicitud.setEstado(estado);
+        AsignarSolicitudRequest request = new AsignarSolicitudRequest();
+        request.setTecnicoId(2L);
+        request.setPrioridad("MEDIA");
         when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud));
-        when(estadoRepository.findById(3L)).thenReturn(Optional.of(estado));
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario(2L, "TECNICO")));
 
-        service.actualizarEstadoSolicitud(5L, 3L);
+        assertThrows(BusinessException.class, () -> service.asignar(5L, request));
+        verify(asignacionRepository, never()).save(any());
+    }
 
-        assertSame(estado, solicitud.getEstado());
+    @Test
+    void tecnicoNoPuedeAtenderSolicitudNoAsignada() {
+        when(usuarioRepository.findByUserLogin("tecnico")).thenReturn(Optional.of(usuario(2L, "TECNICO")));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L)).thenReturn(java.util.List.of());
+
+        assertThrows(BusinessException.class, () -> service.atender(5L, "tecnico"));
         verify(solicitudRepository, never()).save(any(Solicitud.class));
     }
 
     @Test
-    void informaSiLaSolicitudNoExisteAlActualizarEstado() {
-        when(solicitudRepository.findById(5L)).thenReturn(Optional.empty());
+    void solicitantePuedeVerificarSuSolicitudConcluida() {
+        Usuario solicitante = usuario(1L, "FUNCIONARIO");
+        Solicitud solicitud = solicitud(solicitante, "CONCLUIDA");
+        when(usuarioRepository.findByUserLogin("funcionario")).thenReturn(Optional.of(solicitante));
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud));
+        when(solicitudRepository.save(any(Solicitud.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L)).thenReturn(java.util.List.of());
 
-        assertThrows(ResourceNotFoundException.class,
-                () -> service.actualizarEstadoSolicitud(5L, 3L));
+        var response = service.verificar(5L, "funcionario");
+
+        assertEquals(true, response.verificadoPorUsuario());
+        verify(solicitudRepository).save(solicitud);
+    }
+
+    @Test
+    void funcionarioNoPuedeVerificarSolicitudDeOtraPersona() {
+        Usuario solicitante = usuario(1L, "FUNCIONARIO");
+        when(usuarioRepository.findByUserLogin("funcionario")).thenReturn(Optional.of(solicitante));
+        when(solicitudRepository.findById(5L))
+                .thenReturn(Optional.of(solicitud(usuario(2L, "FUNCIONARIO"), "CONCLUIDA")));
+
+        assertThrows(AccessDeniedException.class, () -> service.verificar(5L, "funcionario"));
+        verify(solicitudRepository, never()).save(any(Solicitud.class));
+    }
+
+    @Test
+    void noPermiteVerificarSolicitudAunNoConcluida() {
+        Usuario solicitante = usuario(1L, "FUNCIONARIO");
+        when(usuarioRepository.findByUserLogin("funcionario")).thenReturn(Optional.of(solicitante));
+        when(solicitudRepository.findById(5L))
+                .thenReturn(Optional.of(solicitud(solicitante, "EN_PROCESO")));
+
+        assertThrows(BusinessException.class, () -> service.verificar(5L, "funcionario"));
+        verify(solicitudRepository, never()).save(any(Solicitud.class));
+    }
+
+    private Solicitud solicitud(Usuario solicitante, String estadoNombre) {
+        EstadoSolicitud estado = new EstadoSolicitud();
+        estado.setEstadoSolicitud(estadoNombre);
+        Solicitud solicitud = new Solicitud();
+        solicitud.setId(5L);
+        solicitud.setEstado(estado);
+        solicitud.setSolicitante(solicitante);
+        return solicitud;
     }
 
     private Usuario usuario(Long id, String nombreRol) {

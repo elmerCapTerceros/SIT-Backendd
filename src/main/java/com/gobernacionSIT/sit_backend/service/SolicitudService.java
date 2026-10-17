@@ -18,10 +18,9 @@ public interface SolicitudService {
 
     SolicitudResponse concluir(Long solicitudId, String userLogin);
 
+    SolicitudResponse verificar(Long solicitudId, String userLogin);
+
     List<SolicitudResponse> listarPropias(String userLogin);
 
-    //Listar todas mis solictudes
-    List<SolicitudResponse> listarTodaas();
-
-    void actualizarEstadoSolicitud(Long solicitudId, Long estadoId);
+    List<SolicitudResponse> listarTodas();
 }

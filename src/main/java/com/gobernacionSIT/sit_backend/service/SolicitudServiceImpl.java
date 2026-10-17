@@ -16,10 +16,13 @@ import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -50,35 +53,36 @@ public class SolicitudServiceImpl implements SolicitudService {
         solicitud.setSolicitante(solicitante);
         solicitud.setEstado(buscarEstado(PENDIENTE));
 
-        return toResponse(solicitudRepository.save(solicitud), null);
+        return SolicitudResponseMapper.toResponse(solicitudRepository.save(solicitud), null);
     }
 
     @Override
     @Transactional
     public SolicitudResponse asignar(Long solicitudId, AsignarSolicitudRequest request) {
         Solicitud solicitud = solicitudRepository.findById(solicitudId)
-                .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
         Usuario tecnico = usuarioRepository.findById(request.getTecnicoId())
-                .orElseThrow(() -> new IllegalArgumentException("Técnico no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
 
         if (!"TECNICO".equals(tecnico.getRol().getNombreRol())) {
             throw new BusinessException("Las solicitudes solo se pueden asignar a usuarios con rol TECNICO");
         }
 
+        if (!PENDIENTE.equals(solicitud.getEstado().getEstadoSolicitud())) {
+            throw new BusinessException("Solo se pueden asignar solicitudes pendientes");
+        }
+
         solicitud.setPrioridad(request.getPrioridad());
-        // CAMBIO: al asignar, la solicitud sigue PENDIENTE.
-        // Pasa a EN_PROCESO recién cuando el técnico pulsa "Atender".
-        solicitud.setEstado(buscarEstado(PENDIENTE));
         AsignacionTecnico asignacion = asignacionTecnicoRepository
-                .findBySolicitud_Id(solicitudId)
+                .findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId)
                 .stream()
                 .findFirst()
                 .orElseGet(AsignacionTecnico::new);
         asignacion.setSolicitud(solicitud);
         asignacion.setTecnico(tecnico);
-        asignacionTecnicoRepository.save(asignacion);
+        AsignacionTecnico asignacionGuardada = asignacionTecnicoRepository.save(asignacion);
 
-        return toResponse(solicitudRepository.save(solicitud), tecnico.getId());
+        return SolicitudResponseMapper.toResponse(solicitudRepository.save(solicitud), asignacionGuardada);
     }
 
     // ---------------------------------------------------------------
@@ -89,18 +93,20 @@ public class SolicitudServiceImpl implements SolicitudService {
     @Override
     @Transactional
     public SolicitudResponse atender(Long solicitudId, String userLogin) {
-        Solicitud solicitud = obtenerSolicitudAsignada(solicitudId, userLogin);
+        AsignacionTecnico asignacion = obtenerAsignacionSolicitud(solicitudId, userLogin);
+        Solicitud solicitud = asignacion.getSolicitud();
         validarEstadoActual(solicitud, PENDIENTE, "atender");
 
         solicitud.setEstado(buscarEstado(EN_PROCESO));
-        return toResponse(solicitudRepository.save(solicitud), tecnicoId(solicitudId));
+        return SolicitudResponseMapper.toResponse(solicitudRepository.save(solicitud), asignacion);
     }
 
     /** PENDIENTE -> RECHAZADA (el motivo es obligatorio) */
     @Override
     @Transactional
     public SolicitudResponse rechazar(Long solicitudId, String userLogin, RechazarSolicitudRequest request) {
-        Solicitud solicitud = obtenerSolicitudAsignada(solicitudId, userLogin);
+        AsignacionTecnico asignacion = obtenerAsignacionSolicitud(solicitudId, userLogin);
+        Solicitud solicitud = asignacion.getSolicitud();
         validarEstadoActual(solicitud, PENDIENTE, "rechazar");
 
         String motivo = request.getMotivo() == null ? "" : request.getMotivo().trim();
@@ -110,46 +116,54 @@ public class SolicitudServiceImpl implements SolicitudService {
 
         solicitud.setMotivoRechazo(motivo);
         solicitud.setEstado(buscarEstado(RECHAZADA));
-        return toResponse(solicitudRepository.save(solicitud), tecnicoId(solicitudId));
+        return SolicitudResponseMapper.toResponse(solicitudRepository.save(solicitud), asignacion);
     }
 
     /** EN_PROCESO -> CONCLUIDA */
     @Override
     @Transactional
     public SolicitudResponse concluir(Long solicitudId, String userLogin) {
-        Solicitud solicitud = obtenerSolicitudAsignada(solicitudId, userLogin);
+        AsignacionTecnico asignacion = obtenerAsignacionSolicitud(solicitudId, userLogin);
+        Solicitud solicitud = asignacion.getSolicitud();
         validarEstadoActual(solicitud, EN_PROCESO, "concluir");
 
         solicitud.setEstado(buscarEstado(CONCLUIDA));
-        return toResponse(solicitudRepository.save(solicitud), tecnicoId(solicitudId));
+        return SolicitudResponseMapper.toResponse(solicitudRepository.save(solicitud), asignacion);
+    }
+
+    @Override
+    @Transactional
+    public SolicitudResponse verificar(Long solicitudId, String userLogin) {
+        Usuario solicitante = buscarUsuario(userLogin);
+        Solicitud solicitud = solicitudRepository.findById(solicitudId)
+                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
+        if (!solicitud.getSolicitante().getId().equals(solicitante.getId())) {
+            throw new AccessDeniedException("Solo puede verificar sus propias solicitudes");
+        }
+        validarEstadoActual(solicitud, CONCLUIDA, "verificar");
+        if (!Boolean.TRUE.equals(solicitud.getVerificadoPorUsuario())) {
+            solicitud.setVerificadoPorUsuario(true);
+            solicitudRepository.save(solicitud);
+        }
+        AsignacionTecnico asignacion = asignacionTecnicoRepository
+                .findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId)
+                .stream()
+                .findFirst()
+                .orElse(null);
+        return SolicitudResponseMapper.toResponse(solicitud, asignacion);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SolicitudResponse> listarPropias(String userLogin) {
         Usuario usuario = buscarUsuario(userLogin);
-        return solicitudRepository.findBySolicitante_Id(usuario.getId()).stream()
-                .map(solicitud -> toResponse(solicitud, tecnicoId(solicitud.getId())))
-                .toList();
+        return toResponses(solicitudRepository.findBySolicitante_Id(usuario.getId()));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<SolicitudResponse> listarTodaas() {
-        return solicitudRepository.findAll().stream()
-                .map(solicitud -> toResponse(solicitud, tecnicoId(solicitud.getId())))
-                .toList();
-    }
-
-    @Override
-    @Transactional
-    public void actualizarEstadoSolicitud(Long solicitudId, Long estadoId) {
-        Solicitud solicitud = solicitudRepository.findById(solicitudId)
-                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
-        EstadoSolicitud estado = estadoSolicitudRepository.findById(estadoId)
-                .orElseThrow(() -> new ResourceNotFoundException("Estado de solicitud no encontrado"));
-
-        solicitud.setEstado(estado);
+    public List<SolicitudResponse> listarTodas() {
+        return toResponses(solicitudRepository.findAll());
     }
 
     // ---------------------------------------------------------------
@@ -157,17 +171,12 @@ public class SolicitudServiceImpl implements SolicitudService {
     // ---------------------------------------------------------------
 
     /** Busca la solicitud y verifica que esté asignada al técnico que hace la petición. */
-    private Solicitud obtenerSolicitudAsignada(Long solicitudId, String userLogin) {
+    private AsignacionTecnico obtenerAsignacionSolicitud(Long solicitudId, String userLogin) {
         Usuario tecnico = buscarUsuario(userLogin);
-        Solicitud solicitud = solicitudRepository.findById(solicitudId)
-                .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
-
-        boolean asignadaAlTecnico = asignacionTecnicoRepository.findBySolicitud_Id(solicitudId).stream()
-                .anyMatch(asignacion -> asignacion.getTecnico().getId().equals(tecnico.getId()));
-        if (!asignadaAlTecnico) {
-            throw new BusinessException("Esta solicitud no está asignada a tu usuario");
-        }
-        return solicitud;
+        return asignacionTecnicoRepository.findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId).stream()
+                .filter(asignacion -> asignacion.getTecnico().getId().equals(tecnico.getId()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException("Esta solicitud no está asignada a tu usuario"));
     }
 
     private void validarEstadoActual(Solicitud solicitud, String estadoEsperado, String accion) {
@@ -178,9 +187,25 @@ public class SolicitudServiceImpl implements SolicitudService {
         }
     }
 
+    private List<SolicitudResponse> toResponses(List<Solicitud> solicitudes) {
+        if (solicitudes.isEmpty()) {
+            return List.of();
+        }
+        List<Long> solicitudIds = solicitudes.stream().map(solicitud -> solicitud.getId()).toList();
+        Map<Long, AsignacionTecnico> asignacionesPorSolicitud = new HashMap<>();
+        for (AsignacionTecnico asignacion : asignacionTecnicoRepository
+                .findBySolicitud_IdInOrderByAsignadoAtDesc(solicitudIds)) {
+            asignacionesPorSolicitud.putIfAbsent(asignacion.getSolicitud().getId(), asignacion);
+        }
+        return solicitudes.stream()
+                .map(solicitud -> SolicitudResponseMapper.toResponse(
+                        solicitud, asignacionesPorSolicitud.get(solicitud.getId())))
+                .toList();
+    }
+
     private Usuario buscarUsuario(String userLogin) {
         return usuarioRepository.findByUserLogin(userLogin)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     }
 
     private EstadoSolicitud buscarEstado(String nombre) {
@@ -188,38 +213,4 @@ public class SolicitudServiceImpl implements SolicitudService {
                 .orElseThrow(() -> new IllegalStateException("Estado no configurado: " + nombre));
     }
 
-    private Long tecnicoId(Long solicitudId) {
-        return asignacionTecnicoRepository.findBySolicitud_Id(solicitudId).stream()
-                .findFirst()
-                .map(asignacion -> asignacion.getTecnico().getId())
-                .orElse(null);
-    }
-
-    private String nombreCompleto(Usuario usuario) {
-        String nombre = usuario.getNombre();
-        String apellido = usuario.getApellido();
-        if (nombre == null || nombre.isBlank()) return apellido;
-        if (apellido == null || apellido.isBlank()) return nombre;
-        return nombre + " " + apellido;
-    }
-
-    private SolicitudResponse toResponse(Solicitud solicitud, Long tecnicoId) {
-        return new SolicitudResponse(
-                solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(),
-                solicitud.getUbicacion(), solicitud.getCategoria(),
-                solicitud.getDescripcion(), solicitud.getPrioridad(), solicitud.getEstado().getEstadoSolicitud(),
-                solicitud.getSolicitante().getId(), nombreCompleto(solicitud.getSolicitante()),
-                tecnicoId, asignacionTecnicoId(solicitud.getId()), solicitud.getVerificadoPorUsuario(),
-                solicitud.getCreatedAt(), solicitud.getUpdatedAt(),
-                solicitud.getSolicitante().getCargo(), solicitud.getSolicitante().getTelefono(),
-                solicitud.getMotivoRechazo()
-        );
-    }
-
-    private Long asignacionTecnicoId(Long solicitudId) {
-        return asignacionTecnicoRepository.findBySolicitud_Id(solicitudId).stream()
-                .findFirst()
-                .map(asignacion -> asignacion.getId()) 
-                .orElse(null);
-    }
 }

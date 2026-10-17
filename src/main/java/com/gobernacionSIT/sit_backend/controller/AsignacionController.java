@@ -34,7 +34,7 @@ public class AsignacionController {
     }
 
     @GetMapping("/solicitud/{solicitudId}/tecnicos")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'TECNICO')")
+    @PreAuthorize("hasRole('SUPERVISOR')")
     public ResponseEntity<List<Long>> obtenerTecnicosAsignados(@PathVariable Long solicitudId) {
         return ResponseEntity.ok(asignacionService.obtenerTecnicosAsignados(solicitudId));
     }

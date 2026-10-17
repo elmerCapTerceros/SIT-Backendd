@@ -5,9 +5,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -31,15 +31,31 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             if (jwtUtils.isTokenValid(token)) {
                 String userLogin = jwtUtils.getUserLoginFromToken(token);
-                UserDetails userDetails = userDetailsService.loadUserByUsername(userLogin);
+                SitUserDetails userDetails = userDetailsService.loadUserByUsername(userLogin);
 
                 var authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities()
                 );
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+                boolean primerIngreso = userDetails.isPrimerIngreso();
+                if (primerIngreso && !esActualizacionInicialPermitida(request)) {
+                    SecurityContextHolder.clearContext();
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.setCharacterEncoding("UTF-8");
+                    response.getWriter().write(
+                            "{\"status\":403,\"error\":\"FIRST_LOGIN_REQUIRED\","
+                                    + "\"message\":\"Debe completar su registro inicial antes de continuar\"}");
+                    return;
+                }
             }
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private boolean esActualizacionInicialPermitida(HttpServletRequest request) {
+        return "PUT".equals(request.getMethod())
+                && "/api/usuarios/me".equals(request.getServletPath());
     }
 }

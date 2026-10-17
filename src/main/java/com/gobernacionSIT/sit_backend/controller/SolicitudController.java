@@ -1,7 +1,6 @@
 package com.gobernacionSIT.sit_backend.controller;
 
 import com.gobernacionSIT.sit_backend.dto.request.AsignarSolicitudRequest;
-import com.gobernacionSIT.sit_backend.dto.request.ActualizarEstadoSolicitudRequest;
 import com.gobernacionSIT.sit_backend.dto.request.CrearSolicitudRequest;
 import com.gobernacionSIT.sit_backend.dto.request.RechazarSolicitudRequest;
 import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
@@ -71,17 +70,17 @@ public class SolicitudController {
         return ResponseEntity.ok(solicitudService.concluir(id, authentication.getName()));
     }
 
-    @PutMapping("/ActualizarEstado")
-    @PreAuthorize("hasRole('SUPERVISOR')")
-    public ResponseEntity<Void> actualizarEstado(
-            @Valid @RequestBody ActualizarEstadoSolicitudRequest request) {
-        solicitudService.actualizarEstadoSolicitud(request.getSolicitud(), request.getEstadoId());
-        return ResponseEntity.noContent().build();
+    @PatchMapping("/{id}/verificar")
+    @PreAuthorize("hasRole('FUNCIONARIO')")
+    public ResponseEntity<SolicitudResponse> verificar(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(solicitudService.verificar(id, authentication.getName()));
     }
 
     @GetMapping("/SolicitudesTecnicas")
-    @PreAuthorize("hasAnyRole('FUNCIONARIO', 'SUPERVISOR')")
-    public ResponseEntity<List<SolicitudResponse>> listarTodas(Authentication authentication) {
-        return ResponseEntity.ok(solicitudService.listarTodaas());
+    @PreAuthorize("hasRole('SUPERVISOR')")
+    public ResponseEntity<List<SolicitudResponse>> listarTodas() {
+        return ResponseEntity.ok(solicitudService.listarTodas());
     }
 }

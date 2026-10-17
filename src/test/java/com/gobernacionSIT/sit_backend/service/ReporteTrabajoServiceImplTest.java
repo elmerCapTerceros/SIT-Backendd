@@ -61,7 +61,7 @@ class ReporteTrabajoServiceImplTest {
         CrearReporteTrabajoRequest request = request();
         request.setAsignacionTecnicoId(null);
         request.setSolicitudId(20L);
-        when(asignacionRepository.findBySolicitud_Id(20L)).thenReturn(List.of(asignacion));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(20L)).thenReturn(List.of(asignacion));
         when(reporteRepository.existsBySolicitud_Id(20L)).thenReturn(false);
         when(reporteRepository.save(any(ReporteTrabajo.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

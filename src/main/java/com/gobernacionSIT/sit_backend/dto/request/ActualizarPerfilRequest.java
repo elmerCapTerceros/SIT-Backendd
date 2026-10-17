@@ -22,8 +22,7 @@ public class ActualizarPerfilRequest {
     @Size(max = 20)
     private String cargo;
 
-    @NotBlank(message = "La contraseña es obligatoria")
-    @Size(min = 3, max = 30, message = "La contraseña debe tener entre 3 y 30 caracteres")
+    @Pattern(regexp = "^$|.{3,30}", message = "La contraseña debe tener entre 3 y 30 caracteres")
     private String password;
 
     @NotBlank(message = "El teléfono es obligatorio")

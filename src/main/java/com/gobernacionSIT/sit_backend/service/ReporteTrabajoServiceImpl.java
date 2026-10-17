@@ -32,7 +32,8 @@ public class ReporteTrabajoServiceImpl implements ReporteTrabajoService {
             asignacion = asignacionTecnicoRepository.findById(request.getAsignacionTecnicoId())
                     .orElseThrow(() -> new ResourceNotFoundException("Asignación de técnico no encontrada"));
         } else {
-            asignacion = asignacionTecnicoRepository.findBySolicitud_Id(request.getSolicitudId()).stream()
+            asignacion = asignacionTecnicoRepository
+                    .findBySolicitud_IdOrderByAsignadoAtDesc(request.getSolicitudId()).stream()
                     .filter(asignacionEncontrada ->
                             asignacionEncontrada.getTecnico().getUserLogin().equals(userLogin))
                     .findFirst()

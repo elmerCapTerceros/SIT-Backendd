@@ -1,6 +1,7 @@
 package com.gobernacionSIT.sit_backend.service;
 
 import com.gobernacionSIT.sit_backend.entity.Rol;
+import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
@@ -39,6 +40,21 @@ class AsignacionServiceImplTest {
     }
 
     @Test
+    void noPermiteCrearUnaSegundaAsignacionParaLaMismaSolicitud() {
+        Solicitud solicitud = new Solicitud();
+        AsignacionTecnico existente = new AsignacionTecnico();
+        existente.setTecnico(usuario(4L, "TECNICO"));
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud));
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario(2L, "TECNICO")));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L))
+                .thenReturn(List.of(existente));
+
+        assertThrows(BusinessException.class, () -> service.asignar(5L, 2L));
+
+        verify(asignacionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
     void tecnicoNoPuedeConsultarSolicitudesDeOtroTecnico() {
         when(usuarioRepository.findByUserLogin("tecnico-1")).thenReturn(Optional.of(usuario(1L, "TECNICO")));
 
@@ -60,6 +76,26 @@ class AsignacionServiceImplTest {
         assertTrue(service.obtenerSolicitudesAsignadas(1L, "tecnico-1").isEmpty());
 
         verify(asignacionRepository).findByTecnicoId(1L);
+    }
+
+    @Test
+    void tecnicoNoVeAsignacionesHistoricasDeUnaSolicitudReasignada() {
+        Usuario tecnicoAnterior = usuario(1L, "TECNICO");
+        Usuario tecnicoActual = usuario(2L, "TECNICO");
+        Solicitud solicitud = new Solicitud();
+        solicitud.setId(5L);
+        AsignacionTecnico anterior = new AsignacionTecnico();
+        anterior.setSolicitud(solicitud);
+        anterior.setTecnico(tecnicoAnterior);
+        AsignacionTecnico actual = new AsignacionTecnico();
+        actual.setSolicitud(solicitud);
+        actual.setTecnico(tecnicoActual);
+        when(usuarioRepository.findByUserLogin("tecnico-1")).thenReturn(Optional.of(tecnicoAnterior));
+        when(asignacionRepository.findByTecnicoId(1L)).thenReturn(List.of(anterior));
+        when(asignacionRepository.findBySolicitud_IdInOrderByAsignadoAtDesc(List.of(5L)))
+                .thenReturn(List.of(actual, anterior));
+
+        assertTrue(service.obtenerSolicitudesAsignadas(1L, "tecnico-1").isEmpty());
     }
 
     @Test

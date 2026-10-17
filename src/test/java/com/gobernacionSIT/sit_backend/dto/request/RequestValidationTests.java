@@ -22,12 +22,12 @@ class RequestValidationTests {
     }
 
     @Test
-    void rejectsInvalidRegistrationPhoneAndPasswordLength() {
+    void rejectsInvalidRegistrationPhoneAndShortPassword() {
         RegistrarUsuarioRequest request = new RegistrarUsuarioRequest();
         request.setNombre("Nombre");
         request.setApellido("Apellido");
         request.setUserLogin("qa_validacion");
-        request.setPassword("123456789");
+        request.setPassword("12");
         request.setCargo("QA");
         request.setTelefono("1234567");
         request.setArea("Sistemas");

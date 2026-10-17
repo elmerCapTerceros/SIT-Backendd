@@ -32,9 +32,6 @@ public class Solicitud {
     @Column(length = 150)
     private String ubicacion;
 
-    @Column(name = "equipo_danado", length = 150)
-    private String equipoDanado;
-
     @Column(name = "motivo_rechazo", length = 500)
     private String motivoRechazo;
 
