@@ -15,4 +15,6 @@ public interface AsignacionService{
 
     List<Long> listarTecnicos ();
 
+    void rechazarAsignacionTwo(Long idAsignacion, String userLogin);
+
 }

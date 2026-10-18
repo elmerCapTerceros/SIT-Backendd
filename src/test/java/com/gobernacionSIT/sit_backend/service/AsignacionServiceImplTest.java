@@ -108,6 +108,34 @@ class AsignacionServiceImplTest {
         verify(asignacionRepository).findByTecnicoId(1L);
     }
 
+    @Test
+    void tecnicoPuedeRechazarSuPropiaAsignacion() {
+        Usuario tecnico = usuario(1L, "TECNICO");
+        AsignacionTecnico asignacion = new AsignacionTecnico();
+        asignacion.setTecnico(tecnico);
+        when(usuarioRepository.findByUserLogin("tecnico-1")).thenReturn(Optional.of(tecnico));
+        when(asignacionRepository.findById(10L)).thenReturn(Optional.of(asignacion));
+
+        service.rechazarAsignacionTwo(10L, "tecnico-1");
+
+        verify(asignacionRepository).delete(asignacion);
+    }
+
+    @Test
+    void tecnicoNoPuedeRechazarAsignacionDeOtroTecnico() {
+        Usuario otroTecnico = usuario(2L, "TECNICO");
+        AsignacionTecnico asignacion = new AsignacionTecnico();
+        asignacion.setTecnico(otroTecnico);
+        when(usuarioRepository.findByUserLogin("tecnico-1"))
+                .thenReturn(Optional.of(usuario(1L, "TECNICO")));
+        when(asignacionRepository.findById(10L)).thenReturn(Optional.of(asignacion));
+
+        assertThrows(AccessDeniedException.class,
+                () -> service.rechazarAsignacionTwo(10L, "tecnico-1"));
+
+        verify(asignacionRepository, never()).delete(asignacion);
+    }
+
     private Usuario usuario(Long id, String nombreRol) {
         Rol rol = new Rol();
         rol.setNombreRol(nombreRol);
