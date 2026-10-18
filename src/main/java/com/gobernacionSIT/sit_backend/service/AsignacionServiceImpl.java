@@ -127,14 +127,6 @@ public class AsignacionServiceImpl implements AsignacionService {
                 .toList();
     }
 
-    private String nombreCompleto(Usuario usuario) {
-        String nombre = usuario.getNombre();
-        String apellido = usuario.getApellido();
-        if (nombre == null || nombre.isBlank()) return apellido;
-        if (apellido == null || apellido.isBlank()) return nombre;
-        return nombre + " " + apellido;
-    }
-    
     @Override 
     @Transactional
     public void rechazarAsignacionTwo(Long idAsignacion, String userLogin) {
