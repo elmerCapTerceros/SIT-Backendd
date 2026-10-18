@@ -61,4 +61,13 @@ public class AsignacionController {
                 )
         );
     }
+
+    @DeleteMapping("/rechazar/{idAsignacion}")
+    @PreAuthorize("hasRole('TECNICO')")
+    public ResponseEntity<Void> rechazarAsignacion(
+            @PathVariable Long idAsignacion,
+            Authentication authentication) {
+        asignacionService.rechazarAsignacionTwo(idAsignacion, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
 }

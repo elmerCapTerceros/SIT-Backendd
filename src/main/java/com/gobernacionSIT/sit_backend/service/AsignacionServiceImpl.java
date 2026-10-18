@@ -115,4 +115,17 @@ public class AsignacionServiceImpl implements AsignacionService {
         return nombre + " " + apellido;
     }
     
+    @Override 
+    @Transactional
+    public void rechazarAsignacionTwo(Long idAsignacion, String userLogin) {
+        Usuario tecnico = usuarioRepository.findByUserLogin(userLogin)
+                .orElseThrow(() -> new AccessDeniedException("Usuario autenticado no encontrado"));
+        AsignacionTecnico asignacion = asignacionTecnicoRepository.findById(idAsignacion)
+                .orElseThrow(() -> new IllegalArgumentException("Asignación no encontrada"));
+        if (!asignacion.getTecnico().getId().equals(tecnico.getId())) {
+            throw new AccessDeniedException("Solo el técnico asignado puede rechazar esta asignación");
+        }
+        asignacionTecnicoRepository.delete(asignacion);
+    }
+    
 }
