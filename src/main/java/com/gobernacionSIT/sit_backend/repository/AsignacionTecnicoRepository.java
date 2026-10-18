@@ -13,7 +13,7 @@ public interface AsignacionTecnicoRepository extends JpaRepository<AsignacionTec
 
     List<AsignacionTecnico> findByTecnicoId(Long tecnicoId);
 
-        List<AsignacionTecnico> findByTecnico_IdAndSolicitud_Estado_EstadoSolicitud(
+    List<AsignacionTecnico> findByTecnico_IdAndSolicitud_Estado_EstadoSolicitud(
             Long tecnicoId, String estadoSolicitud);
 
     Optional<AsignacionTecnico> findBySolicitudIdAndTecnicoId(Long solicitudId, Long tecnicoId);
