@@ -2,10 +2,12 @@ package com.gobernacionSIT.sit_backend.service;
 
 import com.gobernacionSIT.sit_backend.entity.Rol;
 import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
+import com.gobernacionSIT.sit_backend.entity.EstadoSolicitud;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
+import com.gobernacionSIT.sit_backend.repository.EstadoSolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
@@ -26,8 +28,9 @@ class AsignacionServiceImplTest {
     private final AsignacionTecnicoRepository asignacionRepository = mock(AsignacionTecnicoRepository.class);
     private final SolicitudRepository solicitudRepository = mock(SolicitudRepository.class);
     private final UsuarioRepository usuarioRepository = mock(UsuarioRepository.class);
+    private final EstadoSolicitudRepository estadoRepository = mock(EstadoSolicitudRepository.class);
     private final AsignacionServiceImpl service = new AsignacionServiceImpl(
-            asignacionRepository, solicitudRepository, usuarioRepository);
+            asignacionRepository, solicitudRepository, usuarioRepository, estadoRepository);
 
     @Test
     void noAsignaSolicitudesAUsuariosConOtroRol() {
@@ -41,13 +44,59 @@ class AsignacionServiceImplTest {
 
     @Test
     void noPermiteCrearUnaSegundaAsignacionParaLaMismaSolicitud() {
-        Solicitud solicitud = new Solicitud();
+        Solicitud solicitud = solicitud("PENDIENTE");
         AsignacionTecnico existente = new AsignacionTecnico();
         existente.setTecnico(usuario(4L, "TECNICO"));
         when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud));
         when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario(2L, "TECNICO")));
         when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L))
                 .thenReturn(List.of(existente));
+
+        assertThrows(BusinessException.class, () -> service.asignar(5L, 2L));
+
+        verify(asignacionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void reasignaSolicitudRechazadaConservandoLaAsignacionAnterior() {
+        Solicitud solicitud = solicitud("RECHAZADA");
+        solicitud.setMotivoRechazo("No corresponde a mi especialidad");
+        AsignacionTecnico anterior = new AsignacionTecnico();
+        anterior.setSolicitud(solicitud);
+        anterior.setTecnico(usuario(4L, "TECNICO"));
+        EstadoSolicitud pendiente = new EstadoSolicitud();
+        pendiente.setEstadoSolicitud("PENDIENTE");
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud));
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario(2L, "TECNICO")));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L))
+                .thenReturn(List.of(anterior));
+        when(estadoRepository.findByEstadoSolicitud("PENDIENTE")).thenReturn(Optional.of(pendiente));
+
+        service.asignar(5L, 2L);
+
+        assertTrue(solicitud.getEstado() == pendiente);
+        assertTrue(solicitud.getMotivoRechazo() == null);
+        verify(solicitudRepository).save(solicitud);
+        verify(asignacionRepository).save(org.mockito.ArgumentMatchers.argThat(asignacion ->
+                asignacion.getSolicitud() == solicitud
+                        && asignacion.getTecnico().getId().equals(2L)));
+    }
+
+    @Test
+    void noPermiteReasignarUnaSolicitudRechazadaSinAsignacionAnterior() {
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud("RECHAZADA")));
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario(2L, "TECNICO")));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L)).thenReturn(List.of());
+
+        assertThrows(BusinessException.class, () -> service.asignar(5L, 2L));
+
+        verify(asignacionRepository, never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void noPermiteAsignarSolicitudEnProceso() {
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud("EN_PROCESO")));
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario(2L, "TECNICO")));
 
         assertThrows(BusinessException.class, () -> service.asignar(5L, 2L));
 
@@ -143,5 +192,13 @@ class AsignacionServiceImplTest {
         usuario.setId(id);
         usuario.setRol(rol);
         return usuario;
+    }
+
+    private Solicitud solicitud(String estadoNombre) {
+        EstadoSolicitud estado = new EstadoSolicitud();
+        estado.setEstadoSolicitud(estadoNombre);
+        Solicitud solicitud = new Solicitud();
+        solicitud.setEstado(estado);
+        return solicitud;
     }
 }

@@ -2,6 +2,7 @@ package com.gobernacionSIT.sit_backend.service;
 
 import com.gobernacionSIT.sit_backend.dto.request.AsignarSolicitudRequest;
 import com.gobernacionSIT.sit_backend.dto.request.CrearSolicitudRequest;
+import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.EstadoSolicitud;
 import com.gobernacionSIT.sit_backend.entity.Rol;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
@@ -17,6 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -86,6 +88,41 @@ class SolicitudServiceImplTest {
 
         assertThrows(BusinessException.class, () -> service.asignar(5L, request));
         verify(asignacionRepository, never()).save(any());
+    }
+
+    @Test
+    void reasignaSolicitudRechazadaCreandoUnaNuevaAsignacion() {
+        Usuario solicitante = usuario(1L, "FUNCIONARIO");
+        Solicitud solicitud = solicitud(solicitante, "RECHAZADA");
+        solicitud.setMotivoRechazo("No corresponde a mi especialidad");
+        Usuario tecnicoAnterior = usuario(3L, "TECNICO");
+        AsignacionTecnico asignacionAnterior = new AsignacionTecnico();
+        asignacionAnterior.setSolicitud(solicitud);
+        asignacionAnterior.setTecnico(tecnicoAnterior);
+        EstadoSolicitud pendiente = new EstadoSolicitud();
+        pendiente.setEstadoSolicitud("PENDIENTE");
+        AsignarSolicitudRequest request = new AsignarSolicitudRequest();
+        request.setTecnicoId(2L);
+        request.setPrioridad("ALTA");
+        when(solicitudRepository.findById(5L)).thenReturn(Optional.of(solicitud));
+        when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuario(2L, "TECNICO")));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L))
+                .thenReturn(java.util.List.of(asignacionAnterior));
+        when(estadoRepository.findByEstadoSolicitud("PENDIENTE")).thenReturn(Optional.of(pendiente));
+        when(asignacionRepository.save(any(AsignacionTecnico.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(solicitudRepository.save(any(Solicitud.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.asignar(5L, request);
+
+        assertEquals("PENDIENTE", solicitud.getEstado().getEstadoSolicitud());
+        assertNull(solicitud.getMotivoRechazo());
+        assertEquals(2L, response.tecnicoId());
+        verify(asignacionRepository).save(org.mockito.ArgumentMatchers.argThat(asignacion ->
+                asignacion != asignacionAnterior
+                        && asignacion.getSolicitud() == solicitud
+                        && asignacion.getTecnico().getId().equals(2L)));
     }
 
     @Test
