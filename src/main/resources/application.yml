@@ -3,10 +3,9 @@ spring:
     name: sit-backend
 
   datasource:
-
-    url: jdbc:postgresql://localhost:5433/sit_db
-    username: sit_user
-    password: sit_pass
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/sit_db}
+    username: ${DB_USERNAME:sit_user}
+    password: ${DB_PASSWORD:sit_pass}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -25,3 +24,7 @@ spring:
 
 server:
   port: 8080
+
+app:
+  security:
+    jwt-secret: ${JWT_SECRET}

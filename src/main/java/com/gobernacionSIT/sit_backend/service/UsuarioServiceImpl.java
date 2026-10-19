@@ -5,6 +5,8 @@ import com.gobernacionSIT.sit_backend.dto.request.ActualizarPerfilRequest;
 import com.gobernacionSIT.sit_backend.dto.response.UsuarioResponse;
 import com.gobernacionSIT.sit_backend.entity.Rol;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
+import com.gobernacionSIT.sit_backend.exception.BusinessException;
+import com.gobernacionSIT.sit_backend.exception.ResourceNotFoundException;
 import com.gobernacionSIT.sit_backend.repository.RolRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +29,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public UsuarioResponse registrar(RegistrarUsuarioRequest request) {
         if (usuarioRepository.existsByUserLogin(request.getUserLogin())) {
-            throw new IllegalArgumentException("Ya existe un usuario con ese loginUser");
+            throw new BusinessException("Ya existe un usuario con ese login");
         }
 
         String nombreRol = request.getNombreRol();
@@ -58,7 +60,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional
     public UsuarioResponse actualizarPerfil(String userLogin, ActualizarPerfilRequest request) {
         Usuario usuario = usuarioRepository.findByUserLogin(userLogin)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         usuario.setNombre(request.getNombre());
         usuario.setApellido(request.getApellido());
@@ -78,7 +80,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional(readOnly = true)
     public boolean esPrimerIngreso(String userLogin) {
         Usuario usuario = usuarioRepository.findByUserLogin(userLogin)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         return usuario.isPrimerIngreso();
     }
@@ -87,7 +89,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponse buscarPorUserLogin(String userLogin) {
         Usuario usuario = usuarioRepository.findByUserLogin(userLogin)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         return mapToResponse(usuario);
     }
 
@@ -95,7 +97,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponse buscarPorId(Long id) {
         Usuario usuario = usuarioRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         return mapToResponse(usuario);
     }
 

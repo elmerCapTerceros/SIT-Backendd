@@ -7,7 +7,7 @@ public record SolicitudResponse(
         String codigo,
         String titulo,
         String area,
-        String ubicacionOficina,
+        String ubicacion,
         String categoria,
         String descripcion,
         String prioridad,
@@ -15,8 +15,12 @@ public record SolicitudResponse(
         Long solicitanteId,
         String solicitanteNombre,
         Long tecnicoId,
+        Long asignacionTecnicoId,
         Boolean verificadoPorUsuario,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        LocalDateTime updatedAt,
+        String solicitanteCargo,
+        String solicitanteTelefono,
+        String motivoRechazo
 ) {
 }

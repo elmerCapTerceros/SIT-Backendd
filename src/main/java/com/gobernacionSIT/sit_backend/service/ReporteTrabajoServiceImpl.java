@@ -24,8 +24,22 @@ public class ReporteTrabajoServiceImpl implements ReporteTrabajoService {
     @Override
     @Transactional
     public ReporteTrabajoResponse crear(String userLogin, CrearReporteTrabajoRequest request) {
-        AsignacionTecnico asignacion = asignacionTecnicoRepository.findById(request.getAsignacionTecnicoId())
-                .orElseThrow(() -> new ResourceNotFoundException("Asignación de técnico no encontrada"));
+        if (request.getAsignacionTecnicoId() == null && request.getSolicitudId() == null) {
+            throw new BusinessException("La solicitud es obligatoria para guardar el reporte");
+        }
+        AsignacionTecnico asignacion;
+        if (request.getAsignacionTecnicoId() != null) {
+            asignacion = asignacionTecnicoRepository.findById(request.getAsignacionTecnicoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Asignación de técnico no encontrada"));
+        } else {
+            asignacion = asignacionTecnicoRepository
+                    .findBySolicitud_IdOrderByAsignadoAtDesc(request.getSolicitudId()).stream()
+                    .filter(asignacionEncontrada ->
+                            asignacionEncontrada.getTecnico().getUserLogin().equals(userLogin))
+                    .findFirst()
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "No se encontró la asignación de esta solicitud para el técnico"));
+        }
 
         if (!asignacion.getTecnico().getUserLogin().equals(userLogin)) {
             throw new AccessDeniedException("Solo el técnico asignado puede crear el reporte");
@@ -39,11 +53,21 @@ public class ReporteTrabajoServiceImpl implements ReporteTrabajoService {
         ReporteTrabajo reporte = new ReporteTrabajo();
         reporte.setSolicitud(asignacion.getSolicitud());
         reporte.setAsignacionTecnico(asignacion);
+        reporte.setNumeroFormulario(request.getNumeroFormulario());
+        reporte.setFechaAtencion(request.getFechaAtencion());
+        reporte.setHoraAtencion(request.getHoraAtencion());
+        reporte.setUnidad(request.getUnidad());
+        reporte.setSolicitante(request.getSolicitante());
+        reporte.setNumeroInventario(request.getNumeroInventario());
         reporte.setTipoEquipo(request.getTipoEquipo());
+        reporte.setTipoEquipoOtro(request.getTipoEquipoOtro());
+        reporte.setProblema(request.getProblema());
         reporte.setDiagnostico(request.getDiagnostico());
         reporte.setTrabajoRealizado(request.getTrabajoRealizado());
         reporte.setEstadoFinal(request.getEstadoFinal());
         reporte.setObservacion(request.getObservacion());
+        reporte.setTecnicoNombre(request.getTecnicoNombre());
+        reporte.setFuncionarioNombre(request.getFuncionarioNombre());
 
         return toResponse(reporteTrabajoRepository.save(reporte));
     }
@@ -55,11 +79,21 @@ public class ReporteTrabajoServiceImpl implements ReporteTrabajoService {
                 reporte.getAsignacionTecnico().getId(),
                 reporte.getAsignacionTecnico().getTecnico().getId(),
                 reporte.getSolicitud().getCodigo(),
+                reporte.getNumeroFormulario(),
+                reporte.getFechaAtencion(),
+                reporte.getHoraAtencion(),
+                reporte.getUnidad(),
+                reporte.getSolicitante(),
+                reporte.getNumeroInventario(),
                 reporte.getTipoEquipo(),
+                reporte.getTipoEquipoOtro(),
+                reporte.getProblema(),
                 reporte.getDiagnostico(),
                 reporte.getTrabajoRealizado(),
                 reporte.getEstadoFinal(),
                 reporte.getObservacion(),
+                reporte.getTecnicoNombre(),
+                reporte.getFuncionarioNombre(),
                 reporte.getCreatedAt()
         );
     }

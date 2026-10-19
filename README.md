@@ -65,13 +65,21 @@ sit-backend/
 
 ## Configuración de base de datos
 
-La aplicación está configurada para conectarse a PostgreSQL en localhost:5433 con estas credenciales:
+La aplicación usa PostgreSQL en localhost:5433 por defecto para desarrollo local. Puedes sobrescribir la conexión mediante variables de entorno:
 
 - Base de datos: `sit_db`
 - Usuario: `sit_user`
 - Contraseña: `sit_pass`
 
-Estas configuraciones están definidas en `src/main/resources/application.yml`.
+`DB_URL`, `DB_USERNAME` y `DB_PASSWORD` controlan la conexión.
+
+Configura además `JWT_SECRET` con una clave aleatoria de al menos 32 bytes antes de iniciar la aplicación. Por ejemplo, en PowerShell:
+
+```powershell
+$env:JWT_SECRET = [Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Maximum 256 }))
+```
+
+No reutilices claves de desarrollo en producción.
 
 ## Ejecutar con Docker
 
@@ -124,8 +132,8 @@ Ejemplo de body:
 
 ```json
 {
-  "userLogin": "admin",
-  "password": "12345678"
+  "userLogin": "<usuario registrado>",
+  "password": "<contraseña>"
 }
 ```
 
@@ -146,7 +154,17 @@ POST /api/solicitudes
 GET /api/solicitudes/misSolicitudes
 PUT /api/solicitudes/{id}/asignacion
 GET /api/solicitudes/SolicitudesTecnicas
+PATCH /api/solicitudes/{id}/atender
+PATCH /api/solicitudes/{id}/rechazar
+PATCH /api/solicitudes/{id}/concluir
+PATCH /api/solicitudes/{id}/verificar
 ```
+
+Las acciones de atender, rechazar y concluir son exclusivas del técnico asignado.
+El funcionario solicitante puede verificar la recepción solo cuando la solicitud está concluida.
+El endpoint de rechazo requiere `{"motivo":"..."}` con un motivo de 10 a 500 caracteres.
+Los listados de solicitudes asignadas incluyen el motivo de rechazo y los datos
+disponibles del funcionario solicitante.
 
 ### Roles
 
@@ -154,6 +172,9 @@ GET /api/solicitudes/SolicitudesTecnicas
 POST /api/roles
 GET /api/roles
 ```
+
+La consulta y creación de roles están limitadas al supervisor; solo se permiten
+los roles `FUNCIONARIO`, `TECNICO` y `SUPERVISOR`.
 
 ## Roles soportados
 
@@ -170,9 +191,11 @@ La configuración de seguridad incluye:
 - CSRF deshabilitado
 - CORS habilitado para `http://localhost:5173`
 - Sesiones stateless
-- Endpoints públicos únicamente en `/api/auth/**`
+- Endpoints públicos en `/api/auth/**` y documentación OpenAPI
 - El resto de rutas requiere autenticación
 - Validación por `@PreAuthorize` en los controladores
+- Las cuentas con `primer_ingreso=true` solo pueden completar `PUT /api/usuarios/me`
+  hasta guardar su perfil y una nueva contraseña.
 
 ## Migraciones con Flyway
 
@@ -183,6 +206,9 @@ src/main/resources/db/migration/
 ```
 
 Flyway ejecuta automáticamente las migraciones al levantar la aplicación.
+La migración V15 elimina de `solicitud` la columna obsoleta `equipo_danado`;
+respalda la base de datos antes de desplegar esta versión en otros entornos.
+La V16 obliga a completar el perfil inicial del supervisor antes de usar otras rutas.
 
 ## Variables y configuración relevantes
 
@@ -203,6 +229,9 @@ spring:
     url: jdbc:postgresql://localhost:5433/sit_db
     username: sit_user
     password: sit_pass
+app:
+  security:
+    jwt-secret: ${JWT_SECRET}
 ```
 
 ## Ejemplo de uso rápido
@@ -212,7 +241,7 @@ spring:
 ```bash
 curl -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"userLogin":"admin","password":"12345678"}'
+  -d '{"userLogin":"<usuario registrado>","password":"<contraseña>"}'
 ```
 
 ### Crear una solicitud

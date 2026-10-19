@@ -4,13 +4,16 @@ import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
+import com.gobernacionSIT.sit_backend.exception.ResourceNotFoundException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class AsignacionServiceImpl implements AsignacionService {
@@ -28,15 +31,21 @@ public class AsignacionServiceImpl implements AsignacionService {
     }
 
     @Override
+    @Transactional
     public void asignar(Long solicitudId, Long tecnicoId) {
-        if (asignacionTecnicoRepository.existsBySolicitudIdAndTecnicoId(solicitudId, tecnicoId)) {
-            throw new IllegalStateException("El técnico ya está asignado a esta solicitud");
-        }
         Solicitud solicitud = solicitudRepository.findById(solicitudId)
-            .orElseThrow(() -> new IllegalArgumentException("Solicitud no encontrada"));
+            .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
         Usuario tecnico = usuarioRepository.findById(tecnicoId)
-            .orElseThrow(() -> new IllegalArgumentException("Técnico no encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
         validarRolTecnico(tecnico);
+        List<AsignacionTecnico> actuales = asignacionTecnicoRepository
+                .findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId);
+        if (actuales.stream().anyMatch(asignacion -> asignacion.getTecnico().getId().equals(tecnicoId))) {
+            throw new BusinessException("El técnico ya está asignado a esta solicitud");
+        }
+        if (!actuales.isEmpty()) {
+            throw new BusinessException("La solicitud ya tiene un técnico asignado; use la opción de reasignar");
+        }
         AsignacionTecnico asignacion = new AsignacionTecnico();
         asignacion.setSolicitud(solicitud);
         asignacion.setTecnico(tecnico);
@@ -51,20 +60,18 @@ public class AsignacionServiceImpl implements AsignacionService {
 
     @Override
     public List<Long> obtenerTecnicosAsignados(Long solicitudId) {
-        return asignacionTecnicoRepository.findBySolicitud_Id(solicitudId)
+        return asignacionTecnicoRepository.findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId)
                 .stream()
-                .map(asignacion -> asignacion.getTecnico().getId())
-                .toList();
+                .findFirst()
+                .map(asignacion -> List.of(asignacion.getTecnico().getId()))
+                .orElseGet(List::of);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<SolicitudResponse> obtenerSolicitudesAsignadas(Long tecnicoId, String userLogin) {
         validarTecnicoSolicitudes(tecnicoId, userLogin);
-        return asignacionTecnicoRepository.findByTecnicoId(tecnicoId)
-                .stream()
-                .map(this::toSolicitudResponse)
-                .toList();
+        return respuestasDeAsignacionesVigentes(asignacionTecnicoRepository.findByTecnicoId(tecnicoId), tecnicoId);
     }
 
     @Override
@@ -72,11 +79,10 @@ public class AsignacionServiceImpl implements AsignacionService {
     public List<SolicitudResponse> obtenerSolicitudesAsignadasPorEstado(
             Long tecnicoId, String estadoSolicitud, String userLogin) {
         validarTecnicoSolicitudes(tecnicoId, userLogin);
-        return asignacionTecnicoRepository
-                .findByTecnico_IdAndSolicitud_Estado_EstadoSolicitud(tecnicoId, estadoSolicitud)
-                .stream()
-                .map(this::toSolicitudResponse)
-                .toList();
+        return respuestasDeAsignacionesVigentes(
+                asignacionTecnicoRepository
+                        .findByTecnico_IdAndSolicitud_Estado_EstadoSolicitud(tecnicoId, estadoSolicitud),
+                tecnicoId);
     }
 
     private void validarTecnicoSolicitudes(Long tecnicoId, String userLogin) {
@@ -89,15 +95,29 @@ public class AsignacionServiceImpl implements AsignacionService {
     }
 
     private SolicitudResponse toSolicitudResponse(AsignacionTecnico asignacion) {
-        Solicitud solicitud = asignacion.getSolicitud();
-        return new SolicitudResponse(
-                solicitud.getId(), solicitud.getCodigo(), solicitud.getTitulo(), solicitud.getArea(),
-                solicitud.getUbicacion(), solicitud.getCategoria(), solicitud.getDescripcion(), solicitud.getPrioridad(),
-                solicitud.getEstado().getEstadoSolicitud(), solicitud.getSolicitante().getId(),
-                nombreCompleto(solicitud.getSolicitante()), asignacion.getTecnico().getId(),
-                solicitud.getVerificadoPorUsuario(),
-                solicitud.getCreatedAt(), solicitud.getUpdatedAt()
-        );
+        return SolicitudResponseMapper.toResponse(asignacion.getSolicitud(), asignacion);
+    }
+
+    private List<SolicitudResponse> respuestasDeAsignacionesVigentes(
+            List<AsignacionTecnico> asignaciones, Long tecnicoId) {
+        if (asignaciones.isEmpty()) {
+            return List.of();
+        }
+        List<Long> solicitudIds = asignaciones.stream()
+                .map(asignacion -> asignacion.getSolicitud().getId())
+                .distinct()
+                .toList();
+        Map<Long, AsignacionTecnico> asignacionVigentePorSolicitud = new HashMap<>();
+        for (AsignacionTecnico asignacion : asignacionTecnicoRepository
+                .findBySolicitud_IdInOrderByAsignadoAtDesc(solicitudIds)) {
+            asignacionVigentePorSolicitud.putIfAbsent(asignacion.getSolicitud().getId(), asignacion);
+        }
+        return asignaciones.stream()
+                .map(asignacion -> asignacionVigentePorSolicitud.get(asignacion.getSolicitud().getId()))
+                .filter(asignacion -> asignacion != null
+                        && asignacion.getTecnico().getId().equals(tecnicoId))
+                .map(this::toSolicitudResponse)
+                .toList();
     }
 
     @Override
@@ -107,14 +127,6 @@ public class AsignacionServiceImpl implements AsignacionService {
                 .toList();
     }
 
-    private String nombreCompleto(Usuario usuario) {
-        String nombre = usuario.getNombre();
-        String apellido = usuario.getApellido();
-        if (nombre == null || nombre.isBlank()) return apellido;
-        if (apellido == null || apellido.isBlank()) return nombre;
-        return nombre + " " + apellido;
-    }
-    
     @Override 
     @Transactional
     public void rechazarAsignacionTwo(Long idAsignacion, String userLogin) {

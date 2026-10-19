@@ -22,12 +22,12 @@ class RequestValidationTests {
     }
 
     @Test
-    void rejectsInvalidRegistrationPhoneAndPasswordLength() {
+    void rejectsInvalidRegistrationPhoneAndShortPassword() {
         RegistrarUsuarioRequest request = new RegistrarUsuarioRequest();
         request.setNombre("Nombre");
         request.setApellido("Apellido");
         request.setUserLogin("qa_validacion");
-        request.setPassword("123456789");
+        request.setPassword("12");
         request.setCargo("QA");
         request.setTelefono("1234567");
         request.setArea("Sistemas");
@@ -39,5 +39,34 @@ class RequestValidationTests {
 
         assertTrue(fields.contains("telefono"));
         assertTrue(fields.contains("password"));
+    }
+
+    @Test
+    void rejectsRejectionReasonOutsideAllowedLength() {
+        RechazarSolicitudRequest request = new RechazarSolicitudRequest();
+        request.setMotivo("Muy corto");
+
+        assertTrue(validator.validate(request).stream()
+                .anyMatch(error -> error.getPropertyPath().toString().equals("motivo")));
+    }
+
+    @Test
+    void acceptsRejectionReasonWithAllowedLength() {
+        RechazarSolicitudRequest request = new RechazarSolicitudRequest();
+        request.setMotivo("Motivo valido para rechazo");
+
+        assertTrue(validator.validate(request).isEmpty());
+    }
+
+    @Test
+    void allowsReportToResolveAssignmentFromSolicitudId() {
+        CrearReporteTrabajoRequest request = new CrearReporteTrabajoRequest();
+        request.setSolicitudId(20L);
+        request.setDiagnostico("Diagnóstico registrado");
+        request.setTrabajoRealizado("Trabajo completado");
+        request.setEstadoFinal("SOLUCIONADO");
+
+        assertTrue(validator.validate(request).stream()
+                .noneMatch(error -> error.getPropertyPath().toString().equals("asignacionTecnicoId")));
     }
 }
