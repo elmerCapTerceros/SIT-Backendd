@@ -68,16 +68,30 @@ public class SolicitudServiceImpl implements SolicitudService {
             throw new BusinessException("Las solicitudes solo se pueden asignar a usuarios con rol TECNICO");
         }
 
-        if (!PENDIENTE.equals(solicitud.getEstado().getEstadoSolicitud())) {
-            throw new BusinessException("Solo se pueden asignar solicitudes pendientes");
+        boolean reasignandoRechazada = RECHAZADA.equals(solicitud.getEstado().getEstadoSolicitud());
+        if (!PENDIENTE.equals(solicitud.getEstado().getEstadoSolicitud()) && !reasignandoRechazada) {
+            throw new BusinessException(
+                    "Solo se pueden asignar solicitudes pendientes o reasignar solicitudes rechazadas");
+        }
+
+        List<AsignacionTecnico> asignacionesActuales = asignacionTecnicoRepository
+                .findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId);
+        if (reasignandoRechazada && asignacionesActuales.isEmpty()) {
+            throw new BusinessException("No hay una asignación rechazada que se pueda reasignar");
+        }
+        if (reasignandoRechazada && asignacionesActuales.stream()
+                .anyMatch(asignacion -> asignacion.getTecnico().getId().equals(tecnico.getId()))) {
+            throw new BusinessException("El técnico ya está asignado a esta solicitud");
+        }
+        if (reasignandoRechazada) {
+            solicitud.setEstado(buscarEstado(PENDIENTE));
+            solicitud.setMotivoRechazo(null);
         }
 
         solicitud.setPrioridad(request.getPrioridad());
-        AsignacionTecnico asignacion = asignacionTecnicoRepository
-                .findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId)
-                .stream()
-                .findFirst()
-                .orElseGet(AsignacionTecnico::new);
+        AsignacionTecnico asignacion = reasignandoRechazada
+                ? new AsignacionTecnico()
+                : asignacionesActuales.stream().findFirst().orElseGet(AsignacionTecnico::new);
         asignacion.setSolicitud(solicitud);
         asignacion.setTecnico(tecnico);
         AsignacionTecnico asignacionGuardada = asignacionTecnicoRepository.save(asignacion);

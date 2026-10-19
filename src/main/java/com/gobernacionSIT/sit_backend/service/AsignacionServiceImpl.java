@@ -1,11 +1,13 @@
 package com.gobernacionSIT.sit_backend.service;
 import com.gobernacionSIT.sit_backend.dto.response.SolicitudResponse;
 import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
+import com.gobernacionSIT.sit_backend.entity.EstadoSolicitud;
 import com.gobernacionSIT.sit_backend.entity.Solicitud;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
 import com.gobernacionSIT.sit_backend.exception.ResourceNotFoundException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
+import com.gobernacionSIT.sit_backend.repository.EstadoSolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.SolicitudRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
 import org.springframework.security.access.AccessDeniedException;
@@ -18,39 +20,67 @@ import java.util.Map;
 @Service
 public class AsignacionServiceImpl implements AsignacionService {
 
+    private static final String PENDIENTE = "PENDIENTE";
+    private static final String RECHAZADA = "RECHAZADA";
+    private static final String CONCLUIDA = "CONCLUIDA";
+
     private final AsignacionTecnicoRepository asignacionTecnicoRepository;
     private final SolicitudRepository solicitudRepository;
     private final UsuarioRepository usuarioRepository;
+    private final EstadoSolicitudRepository estadoSolicitudRepository;
 
     public AsignacionServiceImpl(AsignacionTecnicoRepository asignacionTecnicoRepository,
                                  SolicitudRepository solicitudRepository,
-                                 UsuarioRepository usuarioRepository) {
+                                 UsuarioRepository usuarioRepository,
+                                 EstadoSolicitudRepository estadoSolicitudRepository) {
         this.asignacionTecnicoRepository = asignacionTecnicoRepository;
         this.solicitudRepository = solicitudRepository;
         this.usuarioRepository = usuarioRepository;
+        this.estadoSolicitudRepository = estadoSolicitudRepository;
     }
 
     @Override
     @Transactional
     public void asignar(Long solicitudId, Long tecnicoId) {
-        Solicitud solicitud = solicitudRepository.findById(solicitudId)
-            .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
+         Solicitud solicitud = solicitudRepository.findById(solicitudId)
+             .orElseThrow(() -> new ResourceNotFoundException("Solicitud no encontrada"));
         Usuario tecnico = usuarioRepository.findById(tecnicoId)
-            .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
-        validarRolTecnico(tecnico);
+             .orElseThrow(() -> new ResourceNotFoundException("Técnico no encontrado"));
+            validarRolTecnico(tecnico);
+
+        String estadoActual = solicitud.getEstado().getEstadoSolicitud();
+        if (CONCLUIDA.equals(estadoActual)) {
+        throw new BusinessException("No se puede asignar una solicitud concluida");
+        }
+
         List<AsignacionTecnico> actuales = asignacionTecnicoRepository
-                .findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId);
-        if (actuales.stream().anyMatch(asignacion -> asignacion.getTecnico().getId().equals(tecnicoId))) {
-            throw new BusinessException("El técnico ya está asignado a esta solicitud");
+            .findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId);
+
+        boolean mismoTecnico = !actuales.isEmpty()
+            && actuales.get(0).getTecnico().getId().equals(tecnicoId);
+        if (mismoTecnico && !RECHAZADA.equals(estadoActual)) {
+        throw new BusinessException("El técnico ya está asignado a esta solicitud");
+         }
+
+        if (!PENDIENTE.equals(estadoActual)) {
+             EstadoSolicitud pendiente = estadoSolicitudRepository.findByEstadoSolicitud(PENDIENTE)
+                .orElseThrow(() -> new ResourceNotFoundException("Estado PENDIENTE no encontrado"));
+                solicitud.setEstado(pendiente);
+                solicitud.setMotivoRechazo(null);
+            solicitudRepository.save(solicitud);
         }
+
+
         if (!actuales.isEmpty()) {
-            throw new BusinessException("La solicitud ya tiene un técnico asignado; use la opción de reasignar");
+             asignacionTecnicoRepository.deleteAll(actuales);
+            asignacionTecnicoRepository.flush();   
         }
+
         AsignacionTecnico asignacion = new AsignacionTecnico();
         asignacion.setSolicitud(solicitud);
         asignacion.setTecnico(tecnico);
         asignacionTecnicoRepository.save(asignacion);
-    }
+}
 
     private void validarRolTecnico(Usuario usuario) {
         if (!"TECNICO".equals(usuario.getRol().getNombreRol())) {
