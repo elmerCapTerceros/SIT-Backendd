@@ -85,11 +85,7 @@ public class SolicitudServiceImpl implements SolicitudService {
         return SolicitudResponseMapper.toResponse(solicitudRepository.save(solicitud), asignacionGuardada);
     }
 
-    // ---------------------------------------------------------------
-    // Acciones del técnico sobre una solicitud asignada
-    // ---------------------------------------------------------------
 
-    /** PENDIENTE -> EN_PROCESO */
     @Override
     @Transactional
     public SolicitudResponse atender(Long solicitudId, String userLogin) {
@@ -101,7 +97,6 @@ public class SolicitudServiceImpl implements SolicitudService {
         return SolicitudResponseMapper.toResponse(solicitudRepository.save(solicitud), asignacion);
     }
 
-    /** PENDIENTE -> RECHAZADA (el motivo es obligatorio) */
     @Override
     @Transactional
     public SolicitudResponse rechazar(Long solicitudId, String userLogin, RechazarSolicitudRequest request) {
@@ -119,7 +114,6 @@ public class SolicitudServiceImpl implements SolicitudService {
         return SolicitudResponseMapper.toResponse(solicitudRepository.save(solicitud), asignacion);
     }
 
-    /** EN_PROCESO -> CONCLUIDA */
     @Override
     @Transactional
     public SolicitudResponse concluir(Long solicitudId, String userLogin) {
@@ -166,17 +160,17 @@ public class SolicitudServiceImpl implements SolicitudService {
         return toResponses(solicitudRepository.findAll());
     }
 
-    // ---------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------
-
-    /** Busca la solicitud y verifica que esté asignada al técnico que hace la petición. */
     private AsignacionTecnico obtenerAsignacionSolicitud(Long solicitudId, String userLogin) {
         Usuario tecnico = buscarUsuario(userLogin);
-        return asignacionTecnicoRepository.findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId).stream()
-                .filter(asignacion -> asignacion.getTecnico().getId().equals(tecnico.getId()))
+        AsignacionTecnico asignacionVigente = asignacionTecnicoRepository
+                .findBySolicitud_IdOrderByAsignadoAtDesc(solicitudId)
+                .stream()
                 .findFirst()
                 .orElseThrow(() -> new BusinessException("Esta solicitud no está asignada a tu usuario"));
+        if (!asignacionVigente.getTecnico().getId().equals(tecnico.getId())) {
+            throw new BusinessException("Esta solicitud no está asignada a tu usuario");
+        }
+        return asignacionVigente;
     }
 
     private void validarEstadoActual(Solicitud solicitud, String estadoEsperado, String accion) {

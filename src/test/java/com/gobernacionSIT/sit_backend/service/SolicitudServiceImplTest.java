@@ -98,6 +98,51 @@ class SolicitudServiceImplTest {
     }
 
     @Test
+    void tecnicoAnteriorNoPuedeAtenderSolicitudReasignada() {
+        Usuario solicitante = usuario(3L, "FUNCIONARIO");
+        Usuario tecnicoAnterior = usuario(1L, "TECNICO");
+        Usuario tecnicoActual = usuario(2L, "TECNICO");
+        Solicitud solicitud = solicitud(solicitante, "PENDIENTE");
+        AsignacionTecnico asignacionActual = asignacion(solicitud, tecnicoActual);
+        AsignacionTecnico asignacionAnterior = asignacion(solicitud, tecnicoAnterior);
+        EstadoSolicitud estadoEnProceso = new EstadoSolicitud();
+        estadoEnProceso.setEstadoSolicitud("EN_PROCESO");
+
+        when(usuarioRepository.findByUserLogin("tecnico-anterior")).thenReturn(Optional.of(tecnicoAnterior));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L))
+                .thenReturn(java.util.List.of(asignacionActual, asignacionAnterior));
+        when(estadoRepository.findByEstadoSolicitud("EN_PROCESO")).thenReturn(Optional.of(estadoEnProceso));
+        when(solicitudRepository.save(any(Solicitud.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThrows(BusinessException.class, () -> service.atender(5L, "tecnico-anterior"));
+
+        verify(solicitudRepository, never()).save(any(Solicitud.class));
+    }
+
+    @Test
+    void tecnicoActualPuedeAtenderSolicitudReasignada() {
+        Usuario solicitante = usuario(3L, "FUNCIONARIO");
+        Usuario tecnicoAnterior = usuario(1L, "TECNICO");
+        Usuario tecnicoActual = usuario(2L, "TECNICO");
+        Solicitud solicitud = solicitud(solicitante, "PENDIENTE");
+        AsignacionTecnico asignacionActual = asignacion(solicitud, tecnicoActual);
+        AsignacionTecnico asignacionAnterior = asignacion(solicitud, tecnicoAnterior);
+        EstadoSolicitud estadoEnProceso = new EstadoSolicitud();
+        estadoEnProceso.setEstadoSolicitud("EN_PROCESO");
+
+        when(usuarioRepository.findByUserLogin("tecnico-actual")).thenReturn(Optional.of(tecnicoActual));
+        when(asignacionRepository.findBySolicitud_IdOrderByAsignadoAtDesc(5L))
+                .thenReturn(java.util.List.of(asignacionActual, asignacionAnterior));
+        when(estadoRepository.findByEstadoSolicitud("EN_PROCESO")).thenReturn(Optional.of(estadoEnProceso));
+        when(solicitudRepository.save(any(Solicitud.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.atender(5L, "tecnico-actual");
+
+        assertEquals("EN_PROCESO", response.estado());
+        verify(solicitudRepository).save(solicitud);
+    }
+
+    @Test
     void solicitantePuedeVerificarSuSolicitudConcluida() {
         Usuario solicitante = usuario(1L, "FUNCIONARIO");
         Solicitud solicitud = solicitud(solicitante, "CONCLUIDA");
@@ -142,6 +187,13 @@ class SolicitudServiceImplTest {
         solicitud.setEstado(estado);
         solicitud.setSolicitante(solicitante);
         return solicitud;
+    }
+
+    private AsignacionTecnico asignacion(Solicitud solicitud, Usuario tecnico) {
+        AsignacionTecnico asignacion = new AsignacionTecnico();
+        asignacion.setSolicitud(solicitud);
+        asignacion.setTecnico(tecnico);
+        return asignacion;
     }
 
     private Usuario usuario(Long id, String nombreRol) {
