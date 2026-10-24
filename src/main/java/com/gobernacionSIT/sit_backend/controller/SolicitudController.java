@@ -71,7 +71,7 @@ public class SolicitudController {
     }
 
     @PatchMapping("/{id}/verificar")
-    @PreAuthorize("hasRole('FUNCIONARIO')")
+     @PreAuthorize("hasAnyRole('FUNCIONARIO', 'SUPERVISOR')")
     public ResponseEntity<SolicitudResponse> verificar(
             @PathVariable Long id,
             Authentication authentication) {
