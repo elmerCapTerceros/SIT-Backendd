@@ -4,6 +4,7 @@ import com.gobernacionSIT.sit_backend.dto.request.CrearReporteTrabajoRequest;
 import com.gobernacionSIT.sit_backend.dto.response.ReporteTrabajoResponse;
 import com.gobernacionSIT.sit_backend.entity.AsignacionTecnico;
 import com.gobernacionSIT.sit_backend.entity.ReporteTrabajo;
+import com.gobernacionSIT.sit_backend.entity.Usuario;
 import com.gobernacionSIT.sit_backend.exception.BusinessException;
 import com.gobernacionSIT.sit_backend.exception.ResourceNotFoundException;
 import com.gobernacionSIT.sit_backend.repository.AsignacionTecnicoRepository;
@@ -66,9 +67,8 @@ public class ReporteTrabajoServiceImpl implements ReporteTrabajoService {
         reporte.setTrabajoRealizado(request.getTrabajoRealizado());
         reporte.setEstadoFinal(request.getEstadoFinal());
         reporte.setObservacion(request.getObservacion());
-        reporte.setTecnicoNombre(request.getTecnicoNombre());
+        reporte.setTecnicoNombre(nombreCompleto(asignacion.getTecnico()));
         reporte.setFuncionarioNombre(request.getFuncionarioNombre());
-
         return toResponse(reporteTrabajoRepository.save(reporte));
     }
 
@@ -92,10 +92,23 @@ public class ReporteTrabajoServiceImpl implements ReporteTrabajoService {
                 reporte.getTrabajoRealizado(),
                 reporte.getEstadoFinal(),
                 reporte.getObservacion(),
-                reporte.getTecnicoNombre(),
+                nombreCompleto(reporte.getAsignacionTecnico().getTecnico()),
                 reporte.getFuncionarioNombre(),
+                Boolean.TRUE.equals(reporte.getSolicitud().getVerificadoPorUsuario()),
                 reporte.getCreatedAt()
         );
+    }
+
+    private String nombreCompleto(Usuario usuario) {
+        String nombre = usuario.getNombre();
+        String apellido = usuario.getApellido();
+        if (nombre == null || nombre.isBlank()) {
+            return apellido;
+        }
+        if (apellido == null || apellido.isBlank()) {
+            return nombre;
+        }
+        return nombre + " " + apellido;
     }
 
     @Transactional(readOnly = true)
@@ -109,4 +122,6 @@ public class ReporteTrabajoServiceImpl implements ReporteTrabajoService {
         List<ReporteTrabajo> reportes = reporteTrabajoRepository.findByAsignacionTecnico_Tecnico_UserLogin(userLogin);
         return reportes.stream().map(this::toResponse).toList();
     }
+
+    
 }

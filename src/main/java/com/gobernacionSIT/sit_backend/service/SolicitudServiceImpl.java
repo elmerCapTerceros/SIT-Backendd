@@ -165,7 +165,7 @@ public class SolicitudServiceImpl implements SolicitudService {
     @Transactional(readOnly = true)
     public List<SolicitudResponse> listarPropias(String userLogin) {
         Usuario usuario = buscarUsuario(userLogin);
-        return toResponses(solicitudRepository.findBySolicitante_Id(usuario.getId()));
+        return toResponses(solicitudRepository.findBySolicitante_IdOrderByCreatedAtDescIdDesc(usuario.getId()));
     }
 
     @Override

@@ -25,6 +25,7 @@ public record ReporteTrabajoResponse(
         String observacion,
         String tecnicoNombre,
         String funcionarioNombre,
+        boolean verificacion,
         LocalDateTime createdAt
 ) {
 }
