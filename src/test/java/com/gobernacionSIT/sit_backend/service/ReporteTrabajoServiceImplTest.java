@@ -33,7 +33,11 @@ class ReporteTrabajoServiceImplTest {
     @Test
     void creaReporteParaTecnicoAsignado() {
         AsignacionTecnico asignacion = asignacion(10L, 20L, "tecnico1");
+        asignacion.getSolicitud().setVerificadoPorUsuario(true);
+        asignacion.getTecnico().setNombre("Ana");
+        asignacion.getTecnico().setApellido("García");
         CrearReporteTrabajoRequest request = request();
+        request.setTecnicoNombre("Nombre enviado por el cliente");
         when(asignacionRepository.findById(10L)).thenReturn(Optional.of(asignacion));
         when(reporteRepository.existsBySolicitud_Id(20L)).thenReturn(false);
         when(reporteRepository.save(any(ReporteTrabajo.class))).thenAnswer(invocation -> {
@@ -52,6 +56,8 @@ class ReporteTrabajoServiceImplTest {
         assertEquals("2026-10-17", response.fechaAtencion().toString());
         assertEquals("Edificio Central", response.unidad());
         assertEquals("STI-0042", response.numeroFormulario());
+        assertEquals(true, response.verificacion());
+        assertEquals("Ana García", response.tecnicoNombre());
         verify(reporteRepository).save(any(ReporteTrabajo.class));
     }
 
