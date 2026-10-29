@@ -16,6 +16,8 @@ public interface AvisoRepository extends JpaRepository<Aviso, Long> {
 
     List<Aviso> findBySupervisorIdOrderByCreatedAtDesc(Long supervisorId);
 
+    List<Aviso> findAllByOrderByCreatedAtDesc();
+
     @Modifying
     @Query("UPDATE Aviso a SET a.activo = :activo WHERE a.id = :id")
     int cambiarActivo(@Param("id") Long id, @Param("activo") boolean activo);

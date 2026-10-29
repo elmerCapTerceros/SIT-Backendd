@@ -94,8 +94,22 @@ public class AvisoController {
         throw new AccessDeniedException("El usuario no tiene un rol habilitado para consultar avisos");
     }
 
+    @GetMapping("/todos")
+    @PreAuthorize("hasRole('SUPERVISOR')")
+    public List<AvisoResponse> listarTodos() {
+        return avisoService.listarTodos();
+    }
+
     private boolean tieneRol(Authentication authentication, String rol) {
         return authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_" + rol));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPERVISOR')")
+    public ResponseEntity<Void> eliminar(@PathVariable Long id) {
+        avisoService.eliminarAviso(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

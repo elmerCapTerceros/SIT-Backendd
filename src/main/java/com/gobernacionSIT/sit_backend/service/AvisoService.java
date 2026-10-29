@@ -104,4 +104,17 @@ public class AvisoService {
                 a.getCreatedAt()
         );
     }
+
+    @Transactional(readOnly = true)
+    public List<AvisoResponse> listarTodos() {
+        return avisoRepository.findAllByOrderByCreatedAtDesc()
+                .stream().map(this::toResponse).toList();
+    }
+    
+    @Transactional
+    public void eliminarAviso(Long id) {
+        Aviso aviso = buscarOLanzar(id);
+        avisoRepository.delete(aviso);
+    }
+
 }
