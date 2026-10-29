@@ -24,6 +24,9 @@ public class Aviso {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String destinatario;
 
+    @Column(name = "activo", nullable = false)
+    private Boolean activo = true;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }
