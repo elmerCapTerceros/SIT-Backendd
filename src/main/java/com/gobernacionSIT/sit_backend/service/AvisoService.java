@@ -4,9 +4,9 @@ import com.gobernacionSIT.sit_backend.dto.request.AvisoRequest;
 import com.gobernacionSIT.sit_backend.dto.response.AvisoResponse;
 import com.gobernacionSIT.sit_backend.entity.Aviso;
 import com.gobernacionSIT.sit_backend.entity.Usuario;
+import com.gobernacionSIT.sit_backend.exception.ResourceNotFoundException;
 import com.gobernacionSIT.sit_backend.repository.AvisoRepository;
 import com.gobernacionSIT.sit_backend.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class AvisoService {
     @Transactional
     public AvisoResponse crear(AvisoRequest request) {
         Usuario supervisor = usuarioRepository.findById(request.idSupervisor())
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Supervisor no encontrado con id " + request.idSupervisor()));
 
         Aviso aviso = new Aviso();
@@ -85,13 +85,13 @@ public class AvisoService {
     public void cambiarEstado(Long id, boolean activo) {
         int filas = avisoRepository.cambiarActivo(id, activo);
         if (filas == 0) {
-            throw new EntityNotFoundException("Aviso no encontrado con id " + id);
+            throw new ResourceNotFoundException("Aviso no encontrado con id " + id);
         }
     }
 
     private Aviso buscarOLanzar(Long id) {
         return avisoRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Aviso no encontrado con id " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Aviso no encontrado con id " + id));
     }
 
     private AvisoResponse toResponse(Aviso a) {
