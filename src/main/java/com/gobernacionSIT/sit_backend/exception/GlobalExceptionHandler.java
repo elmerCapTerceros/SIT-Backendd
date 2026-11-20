@@ -6,6 +6,7 @@ import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -56,6 +57,18 @@ public class GlobalExceptionHandler {
                 "status", 409,
                 "error", "BUSINESS_ERROR",
                 "message", exception.getMessage()
+        ));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<Map<String, Object>> handleAuthenticationFailure(
+            AuthenticationException exception) {
+
+        LOGGER.warn("Authentication failed");
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "status", 401,
+                "error", "UNAUTHORIZED",
+                "message", "Usuario o contraseña incorrectos"
         ));
     }
 
